@@ -95,21 +95,29 @@ dir_sy22_raw <- get_education_data(
   filters = list(year = "2022")
 )
 
+# 2023 directory data
+dir_sy23_raw <- get_education_data(
+  level = "school-districts",
+  source = "ccd",
+  topic = "directory",
+  filters = list(year = "2023")
+)
+
 # join data ----
-dir_sy12_sy22_raw <- bind_rows(
+dir_sy12_sy23_raw <- bind_rows(
   dir_sy12_raw, dir_sy13_raw,
   dir_sy14_raw, dir_sy15_raw,
   dir_sy16_raw, dir_sy17_raw,
   dir_sy18_raw, dir_sy19_raw,
   dir_sy20_raw, dir_sy21_raw,
-  dir_sy22_raw
+  dir_sy22_raw, dir_sy23_raw
 )
 
 # write raw file for cleaning later ----
-# write_rds(dir_sy12_sy22_raw, "data/raw/dir_sy12_sy22_raw.rds")
+# write_rds(dir_sy12_sy23_raw, "data/raw/dir_sy12_sy23_raw.rds")
 
 # clean ---------
-dir_sy12_sy22 <- dir_sy12_sy22_raw |>
+dir_sy12_sy23 <- dir_sy12_sy23_raw |>
   rename(
     state = state_mailing,
     ncesid = leaid,
@@ -134,6 +142,24 @@ dir_sy12_sy22 <- dir_sy12_sy22_raw |>
     enroll = as.numeric(enroll),
     sped_enroll = as.numeric(sped_enroll),
     ell_enroll = as.numeric(ell_enroll)
+  ) |>
+  # keep raw 12-code nces locale and its subcategory label
+  mutate(
+    urbanicity_raw = as.integer(urbanicity_id),
+    urbanicity_raw_cat = fct_collapse(as.factor(urbanicity_id),
+      "City, Large" = "11",
+      "City, Midsize" = "12",
+      "City, Small" = "13",
+      "Suburb, Large" = "21",
+      "Suburb, Midsize" = "22",
+      "Suburb, Small" = "23",
+      "Town, Fringe" = "31",
+      "Town, Distant" = "32",
+      "Town, Remote" = "33",
+      "Rural, Fringe" = "41",
+      "Rural, Distant" = "42",
+      "Rural, Remote" = "43"
+    )
   ) |>
   # create simple urbanicity categories
   mutate(urbanicity = fct_collapse(as.factor(urbanicity_id),
@@ -182,11 +208,11 @@ dir_sy12_sy22 <- dir_sy12_sy22_raw |>
   select(
     year, ncesid, state, county, dist_name, state_leaid,
     lea_type, lea_type_id, charter_status, charter_id,
-    urbanicity, cong_dist,
+    urbanicity_raw, urbanicity_raw_cat, urbanicity, cong_dist,
     total_teachers_fte, school_count,
     enroll, sped_enroll, ell_enroll
   )
 
 
 # write -----
-write_rds(dir_sy12_sy22, "data/processed/dir_sy12_sy22.rds")
+write_rds(dir_sy12_sy23, "data/processed/dir_sy12_sy23.rds")

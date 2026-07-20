@@ -17,6 +17,7 @@ f33_sy19_raw <- read_tsv("data/raw/ccd/sdf19_2a.txt")
 f33_sy20_raw <- read_tsv("data/raw/ccd/sdf20_1a.txt")
 f33_sy21_raw <- read_tsv("data/raw/ccd/sdf21_1a.txt")
 f33_sy22_raw <- read_tsv("data/raw/ccd/sdf22_1a.txt")
+f33_sy23_raw <- read_tsv("data/raw/ccd/sdf23_1a.txt")
 
 # clean ----------
 
@@ -135,6 +136,8 @@ clean_f33_pre_essa <- function(df) {
       exp_noninstr_other
 
     ) |>
+    # address -1 and -2 codes in expenditure data
+    mutate(across(c11:exp_noninstr_other, ~clean_na(.x))) |>
     # clean up district name formatting
     mutate(
       dist_name = str_to_title(dist_name),
@@ -254,6 +257,8 @@ clean_f33_pre_essa2 <- function(df) {
       exp_noninstr_other
 
     ) |>
+    # address -1 and -2 codes in expenditure data
+    mutate(across(c11:exp_noninstr_other, ~clean_na(.x))) |>
     # clean up district name formatting
     mutate(
       dist_name = str_to_title(dist_name),
@@ -384,9 +389,10 @@ clean_f33_essa <- function(df) {
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
       enroll = as.numeric(enroll),
-      # calculate current expenditure total
-      exp_cur_total = ifelse(is.na(exp_cur_fed), 0, exp_cur_fed) + 
-        ifelse(is.na(exp_cur_st_loc), 0, exp_cur_st_loc)
+      # calculate current expenditure total; NA components propagate so
+      # districts with unreported CE* values get NA rather than an
+      # understated total (whole states fail to report CE1 in some years)
+      exp_cur_total = exp_cur_fed + exp_cur_st_loc
     )
 }
 
@@ -513,9 +519,9 @@ clean_f33_essa2 <- function(df) {
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
       enroll = as.numeric(enroll),
-      exp_cur_total = ifelse(is.na(exp_cur_fed), 0, exp_cur_fed) +
-        ifelse(is.na(exp_cur_st_loc), 0, exp_cur_st_loc) + 
-        ifelse(is.na(exp_cur_resa), 0, exp_cur_resa)
+      # NA components propagate so districts with unreported CE* values
+      # get NA rather than an understated total
+      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
     )
 }
 
@@ -654,13 +660,15 @@ clean_f33_covid <- function(df) {
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
       enroll = as.numeric(enroll),
-      exp_cur_total = ifelse(is.na(exp_cur_fed), 0, exp_cur_fed) +
-        ifelse(is.na(exp_cur_st_loc), 0, exp_cur_st_loc) + 
-        ifelse(is.na(exp_cur_resa), 0, exp_cur_resa)
+      # NA components propagate so districts with unreported CE* values
+      # get NA rather than an understated total
+      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
     )
 }
 
-# create cleaning function for sy21-sy22
+# create cleaning function for sy21-sy23
+# (sy23 layout matches sy22 exactly except for the dropped CENSUSID column,
+# which is unused here, so the same cleaner applies)
 clean_f33_covid2 <- function(df) {
   df |>
     rename_with(tolower) |>
@@ -798,9 +806,9 @@ clean_f33_covid2 <- function(df) {
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
       enroll = as.numeric(enroll),
-      exp_cur_total = ifelse(is.na(exp_cur_fed), 0, exp_cur_fed) +
-        ifelse(is.na(exp_cur_st_loc), 0, exp_cur_st_loc) + 
-        ifelse(is.na(exp_cur_resa), 0, exp_cur_resa)
+      # NA components propagate so districts with unreported CE* values
+      # get NA rather than an understated total
+      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
     )
 }
 
@@ -816,13 +824,14 @@ f33_sy19 <- clean_f33_essa2(f33_sy19_raw)
 f33_sy20 <- clean_f33_covid(f33_sy20_raw)
 f33_sy21 <- clean_f33_covid2(f33_sy21_raw)
 f33_sy22 <- clean_f33_covid2(f33_sy22_raw)
+f33_sy23 <- clean_f33_covid2(f33_sy23_raw)
 
 # join -------
-f33_sy12_sy22 <- bind_rows(
+f33_sy12_sy23 <- bind_rows(
   f33_sy12, f33_sy13, f33_sy14, f33_sy15,
   f33_sy16, f33_sy17, f33_sy18, f33_sy19,
-  f33_sy20, f33_sy21, f33_sy22
+  f33_sy20, f33_sy21, f33_sy22, f33_sy23
 )
 
 # write -----
-write_rds(f33_sy12_sy22, "data/processed/f33_sy12_sy22.rds")
+write_rds(f33_sy12_sy23, "data/processed/f33_sy12_sy23.rds")

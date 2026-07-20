@@ -6,25 +6,25 @@ library(tidyverse)
 options(scipen = 999)
 
 # load acs elementary data
-acs_fy12_fy22_elementary <- read_rds("data/processed/acs_fy12_fy22_elementary.rds")
+acs_fy12_fy23_elementary <- read_rds("data/processed/acs_fy12_fy23_elementary.rds")
 
 # load acs secondary data
-acs_fy12_fy22_secondary <- read_rds("data/processed/acs_fy12_fy22_secondary.rds")
+acs_fy12_fy23_secondary <- read_rds("data/processed/acs_fy12_fy23_secondary.rds")
 
 # load acs unified data
-acs_fy12_fy22_unified <- read_rds("data/processed/acs_fy12_fy22_unified.rds")
+acs_fy12_fy23_unified <- read_rds("data/processed/acs_fy12_fy23_unified.rds")
 
 # load ccd data
-dir_sy12_sy22 <- read_rds("data/processed/dir_sy12_sy22.rds") |>
+dir_sy12_sy23 <- read_rds("data/processed/dir_sy12_sy23.rds") |>
   mutate(year = as.character(year)) |>
   select(-enroll, -state)
 
 # load f33 data
-f33_sy12_sy22 <- read_rds("data/processed/f33_sy12_sy22.rds") |>
+f33_sy12_sy23 <- read_rds("data/processed/f33_sy12_sy23.rds") |>
   select(-dist_name)
 
 # load saipe data
-saipe_fy12_fy22_clean <- read_rds("data/processed/saipe_fy12_fy22_clean.rds") |>
+saipe_fy12_fy23_clean <- read_rds("data/processed/saipe_fy12_fy23_clean.rds") |>
   select(-state, -dist_name)
 
 # load cpi exclusion data
@@ -32,56 +32,53 @@ cpi_exclusions_sy12 <- read_rds("data/processed/cpi_exclusions_sy12.rds")
 
 # unify acs data -----
 
-acs_fy12_fy22_all <- bind_rows(
-  acs_fy12_fy22_elementary,
-  acs_fy12_fy22_secondary,
-  acs_fy12_fy22_unified
+acs_fy12_fy23_all <- bind_rows(
+  acs_fy12_fy23_elementary,
+  acs_fy12_fy23_secondary,
+  acs_fy12_fy23_unified
 ) |>
   select(-dist_name, -state)
 
 # join data ------
-# there are 208,749 records included in this data frame
-edfinr_join_fy12_fy22 <- f33_sy12_sy22 |>
-  left_join(dir_sy12_sy22, by = c("ncesid", "year")) |>
-  left_join(acs_fy12_fy22_all, by = c("ncesid", "year")) |>
-  left_join(saipe_fy12_fy22_clean, by = c("ncesid", "year")) |>
+edfinr_join_fy12_fy23 <- f33_sy12_sy23 |>
+  left_join(dir_sy12_sy23, by = c("ncesid", "year")) |>
+  left_join(acs_fy12_fy23_all, by = c("ncesid", "year")) |>
+  left_join(saipe_fy12_fy23_clean, by = c("ncesid", "year")) |>
   left_join(cpi_exclusions_sy12 |> select("year", "cpi_sy12"), by = "year") |>
   select(ncesid, year, state, county, dist_name, state_leaid, enroll, everything())
 
 
 # examine incomplete data -------
 
-# there are 21,986 districts and charter schools with less than 0 enrollment
-exclude_no_enroll <- edfinr_join_fy12_fy22 |>
+# districts and charter schools with less than 0 enrollment
+exclude_no_enroll <- edfinr_join_fy12_fy23 |>
   filter(enroll < 0)
 
-# there are 17,963 districts and charters with less than 0 reported total revenue
-exclude_no_total_rev <- edfinr_join_fy12_fy22 |>
+# districts and charters with less than 0 reported total revenue
+exclude_no_total_rev <- edfinr_join_fy12_fy23 |>
   filter(rev_total < 0)
 
-# there are 20,202 lea_type outliers
-exclude_lea_type <- edfinr_join_fy12_fy22 |>
+# lea_type outliers
+exclude_lea_type <- edfinr_join_fy12_fy23 |>
   filter(!lea_type_id %in% c(1, 2, 3, 7))
 
-# there are 25,236 sch_type outliers
-exclude_sch_type <- edfinr_join_fy12_fy22 |>
+# sch_type outliers
+exclude_sch_type <- edfinr_join_fy12_fy23 |>
   filter(!schlev %in% c("01", "02", "03"))
 
 # clean data ----
 
-# we started with 208,749 districts and charter schools
-edfinr_data_fy12_fy22_pre_exclusion <- edfinr_join_fy12_fy22 |>
+edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
   # initial exclusions
   filter(rev_total > 0) |>
   filter(enroll > 0) |>
-  # this reduces the lea total to 178,214
   # apply revenue adjustments
   mutate(
     rev_state_adj_temp = rev_state - c11, # subtract capital/debt service
     rev_local_adj_temp = rev_local - u11, # subtract property sales
     # add tx pre-2013 adjustment to subtract l12 from local revenue
     rev_local_adj_temp = case_when(
-      year < 2013 & state == "TX" ~ rev_local_adj_temp - l12,
+      as.integer(year) < 2013 & state == "TX" ~ rev_local_adj_temp - l12,
       TRUE ~ rev_local_adj_temp
     ),
     # this is a new adjustment to account for payments to other districts
@@ -130,6 +127,14 @@ edfinr_data_fy12_fy22_pre_exclusion <- edfinr_join_fy12_fy22 |>
     rev_state_pp = rev_state / enroll,
     rev_fed_pp = rev_fed / enroll,
     rev_total_pp = rev_total / enroll,
+    # unadjusted per-pupil revenue so users can compare adjusted vs.
+    # unadjusted values directly
+    rev_state_unadj_pp = rev_state_unadj / enroll,
+    rev_local_unadj_pp = rev_local_unadj / enroll,
+    # share of unadjusted total revenue paid to other systems (private
+    # schools, charters, other leas) -- makes the magnitude of the
+    # proportional adjustment visible
+    osp_pct = other_sys_pay / rev_total_unadj,
     # include as a check on this new calculation
     # other_sys_pp = other_sys_pay / enroll,
     exp_cur_pp = exp_cur_total / enroll,
@@ -149,21 +154,25 @@ edfinr_data_fy12_fy22_pre_exclusion <- edfinr_join_fy12_fy22 |>
     rev_total_pp, rev_local_pp, rev_state_pp, rev_fed_pp,
     rev_total, rev_local, rev_state, rev_fed,
     rev_total_unadj, rev_local_unadj, rev_state_unadj, rev_fed_unadj,
-    
+    rev_state_unadj_pp, rev_local_unadj_pp,
+
     exp_cur_pp, rev_exp_pp_diff,
     exp_cur_st_loc, exp_cur_fed, exp_cur_resa, exp_cur_total,
     cpi_sy12, 
-    mhi, mpv, 
+    mhi, mean_hhi, mpv,
     adult_pop, ba_plus_pop, ba_plus_pct,
+    gini, owner_pct, snap_pct, unemp_rate,
     total_pop, student_pop,
     stpov_pop, stpov_pct, cong_dist,
-    state_leaid, county, cbsa, urbanicity,
+    state_leaid, county, cbsa,
+    urbanicity_raw, urbanicity_raw_cat, urbanicity,
     schlev, lea_type, lea_type_id,
 
     exp_emp_salary, exp_emp_bene, exp_textbooks, 
     exp_utilities, exp_tech_supp, exp_tech_equip,
     exp_pay_private_sch, exp_pay_charter_sch,
     exp_pay_other_lea, exp_other_sys_pay,
+    osp_pct,
 
     exp_instr_total, exp_instr_sal, exp_instr_bene,
     exp_supp_stu_total, exp_supp_stu_sal, exp_supp_stu_bene,
@@ -183,6 +192,13 @@ edfinr_data_fy12_fy22_pre_exclusion <- edfinr_join_fy12_fy22 |>
     exp_covid_supp_plant, exp_covid_food
 
   ) |>
+  # join the year-specific revenue-outlier thresholds (CPI-adjusted to 2012
+  # dollars) so the exclusion logic compares against them by year rather than
+  # by positional index -- this stays correct as new years are added
+  left_join(
+    cpi_exclusions_sy12 |> select(year, exclude_lo, exclude_hi),
+    by = "year"
+  ) |>
   # id leas for exclusion
   mutate(
     exclusion_cat = case_when(
@@ -198,48 +214,50 @@ edfinr_data_fy12_fy22_pre_exclusion <- edfinr_join_fy12_fy22 |>
         ) ~ "schtype",
 
       # high revenue outliers
-      year == 2012 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[1] ~ "Over",
-      year == 2013 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[2] ~ "Over",
-      year == 2014 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[3] ~ "Over",
-      year == 2015 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[4] ~ "Over",
-      year == 2016 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[5] ~ "Over",
-      year == 2017 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[6] ~ "Over",
-      year == 2018 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[7] ~ "Over",
-      year == 2019 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[8] ~ "Over",
-      year == 2020 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[9] ~ "Over",
-      year == 2021 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[10] ~ "Over",
-      year == 2022 & rev_total_pp > cpi_exclusions_sy12$exclude_hi[11] ~ "Over",
+      rev_total_pp > exclude_hi ~ "Over",
 
       # low revenue outliers
-      year == 2012 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[1] ~ "Under",
-      year == 2013 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[2] ~ "Under",
-      year == 2014 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[3] ~ "Under",
-      year == 2015 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[4] ~ "Under",
-      year == 2016 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[5] ~ "Under",
-      year == 2017 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[6] ~ "Under",
-      year == 2018 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[7] ~ "Under",
-      year == 2019 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[8] ~ "Under",
-      year == 2020 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[9] ~ "Under",
-      year == 2021 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[10] ~ "Under",
-      year == 2022 & rev_total_pp < cpi_exclusions_sy12$exclude_lo[11] ~ "Under",
+      rev_total_pp < exclude_lo ~ "Under",
       TRUE ~ "Safe"
     )
-  )
+  ) |>
+  # drop the joined threshold helper columns
+  select(-exclude_lo, -exclude_hi)
 
-edfinr_data_fy12_fy22_clean <- edfinr_data_fy12_fy22_pre_exclusion |>
+edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_pre_exclusion |>
   # filter out revenue outliers
   filter(exclusion_cat == "Safe") |>
   # filter out semi-private CT schools: gilbert, NFA, woodstock
   filter(!ncesid %in% c("0905371", "0905372", "0905373")) |>
   select(-exclusion_cat)
 
-exclusion_leas <- edfinr_data_fy12_fy22_pre_exclusion |>
+exclusion_leas <- edfinr_data_fy12_fy23_pre_exclusion |>
   filter(exclusion_cat != "Safe")
 
+# flag district-years where the c11-driven state revenue adjustment removed
+# >50% of unadjusted state revenue and the adjustment is >25pp above the
+# district's own historical median -- these reflect one-time state capital
+# grants (e.g. MA MSBA, CO BEST) rather than changes in operating aid;
+# see adjustment_column_anomalies.md for methodology and affected states
+dist_med_state_adj <- edfinr_data_fy12_fy23_clean |>
+  mutate(state_adj_pct = (rev_state_unadj - rev_state) / rev_state_unadj) |>
+  group_by(ncesid) |>
+  summarise(med_state_adj_pct = median(state_adj_pct, na.rm = TRUE),
+            .groups = "drop")
+
+edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_clean |>
+  mutate(state_adj_pct = (rev_state_unadj - rev_state) / rev_state_unadj) |>
+  left_join(dist_med_state_adj, by = "ncesid") |>
+  mutate(
+    c11_spike_flag = state_adj_pct > 0.5 &
+      state_adj_pct > med_state_adj_pct + 0.25
+  ) |>
+  select(-state_adj_pct, -med_state_adj_pct)
+
 # create df sans expenditure detail
-edfinr_data_fy12_fy22_skinny <- edfinr_data_fy12_fy22_clean |> 
-  select(ncesid:lea_type_id)
+edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
+  select(ncesid:lea_type_id, osp_pct, c11_spike_flag)
 
 # export data -----
-write_rds(edfinr_data_fy12_fy22_clean, "data/processed/edfinr_data_fy12_fy22_full.rds")
-write_rds(edfinr_data_fy12_fy22_skinny, "data/processed/edfinr_data_fy12_fy22_skinny.rds")
+write_rds(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.rds")
+write_rds(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy23_skinny.rds")

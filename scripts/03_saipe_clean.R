@@ -72,19 +72,25 @@ saipe_fy22_raw <- read_excel("data/raw/saipe/ussd22.xls",
 ) |>
   mutate(year = "2022")
 
+# load FY23 SAIPE data
+saipe_fy23_raw <- read_excel("data/raw/saipe/ussd23.xls",
+  skip = 2
+) |>
+  mutate(year = "2023")
+
 # join ----
 
 # create long df of raw data
-saipe_fy12_fy22_raw <- bind_rows(
+saipe_fy12_fy23_raw <- bind_rows(
   saipe_fy12_raw, saipe_fy13_raw, saipe_fy14_raw,
   saipe_fy15_raw, saipe_fy16_raw, saipe_fy17_raw,
   saipe_fy18_raw, saipe_fy19_raw, saipe_fy20_raw,
-  saipe_fy21_raw, saipe_fy22_raw
+  saipe_fy21_raw, saipe_fy22_raw, saipe_fy23_raw
 )
 
 
 # create cleaning function ---------
-saipe_fy12_fy22_clean <- saipe_fy12_fy22_raw |>
+saipe_fy12_fy23_clean <- saipe_fy12_fy23_raw |>
   rename(
     state = "State Postal Code",
     state_id = "State FIPS Code",
@@ -111,4 +117,4 @@ saipe_fy12_fy22_clean <- saipe_fy12_fy22_raw |>
   )
 
 # write data -----
-write_rds(saipe_fy12_fy22_clean, "data/processed/saipe_fy12_fy22_clean.rds")
+write_rds(saipe_fy12_fy23_clean, "data/processed/saipe_fy12_fy23_clean.rds")
