@@ -2,6 +2,7 @@
 
 # load --------
 library(tidyverse)
+library(arrow)
 
 options(scipen = 999)
 
@@ -279,5 +280,7 @@ edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
   select(ncesid:lea_type_id, osp_pct, c11_spike_flag, cwift_est, cwift_imputed)
 
 # export data -----
-write_rds(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.rds")
-write_rds(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy23_skinny.rds")
+# parquet (gzip) for smaller, columnar hosted downloads; factor columns are
+# written as-is and reconstructed on the package read side (see EDFINR_UPDATE_PLAN.md)
+write_parquet(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.parquet", compression = "gzip")
+write_parquet(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy23_skinny.parquet", compression = "gzip")
