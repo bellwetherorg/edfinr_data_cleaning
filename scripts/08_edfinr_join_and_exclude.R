@@ -284,3 +284,22 @@ edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
 # written as-is and reconstructed on the package read side (see EDFINR_UPDATE_PLAN.md)
 write_parquet(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.parquet", compression = "gzip")
 write_parquet(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy23_skinny.parquet", compression = "gzip")
+
+# per-year slices: one file per year per dataset_type (24 total). these let the
+# package download only the requested year(s) (~4 MB full / ~3 MB skinny each)
+# instead of the full combined file above (~50 MB / ~34 MB); yr = "all" still
+# reads the combined file. year is sorted within each slice and factor levels
+# are identical across slices, so the package can bind_rows them with no drift.
+dir.create("data/processed/by_year", showWarnings = FALSE)
+for (yy in sort(unique(edfinr_data_fy12_fy23_clean$year))) {
+  write_parquet(
+    filter(edfinr_data_fy12_fy23_clean, year == yy),
+    sprintf("data/processed/by_year/edfinr_data_fy%s_full.parquet", yy),
+    compression = "gzip"
+  )
+  write_parquet(
+    filter(edfinr_data_fy12_fy23_skinny, year == yy),
+    sprintf("data/processed/by_year/edfinr_data_fy%s_skinny.parquet", yy),
+    compression = "gzip"
+  )
+}
