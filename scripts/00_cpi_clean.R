@@ -31,7 +31,7 @@ cpi_exclusions_sy12 <- cpi_index_9024 |>
   mutate(sy12_index = avg_HALF1_HALF2lag[year == 2012]) |>
   # create cpi adj where 20127 == 1
   mutate(cpi_sy12 = avg_HALF1_HALF2lag / sy12_index) |>
-  # create low and high exclusion values: $500 and $50000 in 2012 USD
+  # create low and high exclusion values: $500 and $70,000 in 2012 USD
   mutate(
     exclude_lo = round_half_up(500 * cpi_sy12, digits = 2),
     exclude_hi = round_half_up(70000 * cpi_sy12, digits = 2)

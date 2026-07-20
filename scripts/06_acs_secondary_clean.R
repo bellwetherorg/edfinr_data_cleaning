@@ -13,8 +13,17 @@ acs_vars <- c(
   pop_ma = "B15003_023", # adults 25+ w/ masters degree
   pop_pro = "B15003_024", # adults 25+ w/ professional degree
   pop_phd = "B15003_025", # adults 25+ w/ doctorate
-  pop_total = "B15003_001" # total 25+ population
-) 
+  pop_total = "B15003_001", # total 25+ population
+  agg_hhi = "B19025_001", # aggregate household income
+  households = "B11001_001", # total households
+  gini = "B19083_001", # gini index of income inequality
+  occ_total = "B25003_001", # occupied housing units
+  occ_owner = "B25003_002", # owner-occupied housing units
+  snap_total = "B22003_001", # households (snap universe)
+  snap_hh = "B22003_002", # households receiving snap
+  lf_civilian = "B23025_003", # civilian labor force
+  unemp = "B23025_005" # unemployed civilians
+)
 
 state_list <- c(
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC",
@@ -132,19 +141,28 @@ acs_fy22_raw <- get_acs(
 ) |>
   mutate(year = "2022")
 
+# pull 2023 acs data
+acs_fy23_raw <- get_acs(
+  variables = acs_vars,
+  geography = "school district (secondary)",
+  year = 2023,
+  survey = "acs5"
+) |>
+  mutate(year = "2023")
+
 
 # join data ------
-acs_fy12_fy22_secondary_raw <- bind_rows(
+acs_fy12_fy23_secondary_raw <- bind_rows(
   acs_fy12_raw, acs_fy13_raw,
   acs_fy14_raw, acs_fy15_raw,
   acs_fy16_raw, acs_fy17_raw,
   acs_fy18_raw, acs_fy19_raw,
   acs_fy20_raw, acs_fy21_raw,
-  acs_fy22_raw
+  acs_fy22_raw, acs_fy23_raw
 )
 
 # clean -------
-acs_fy12_fy22_secondary <- acs_fy12_fy22_secondary_raw |>
+acs_fy12_fy23_secondary <- acs_fy12_fy23_secondary_raw |>
   rename(
     ncesid = "GEOID",
     dist_name = NAME
@@ -162,11 +180,18 @@ acs_fy12_fy22_secondary <- acs_fy12_fy22_secondary_raw |>
   mutate(
     ba_plus_pop = pop_ba + pop_ma + pop_pro + pop_phd,
     ba_plus_pct = ba_plus_pop / pop_total,
-    adult_pop = pop_total
-  ) |> 
+    adult_pop = pop_total,
+    # acs has no direct mean household income table at the district level,
+    # so derive it from aggregate income / households
+    mean_hhi = agg_hhi / households,
+    owner_pct = occ_owner / occ_total,
+    snap_pct = snap_hh / snap_total,
+    unemp_rate = unemp / lf_civilian
+  ) |>
   select(
-    ncesid:year, mhi, mpv, adult_pop, ba_plus_pop, ba_plus_pct
+    ncesid:year, mhi, mean_hhi, mpv, adult_pop, ba_plus_pop, ba_plus_pct,
+    gini, owner_pct, snap_pct, unemp_rate
   )
 
 # write -----
-write_rds(acs_fy12_fy22_secondary, "data/processed/acs_fy12_fy22_secondary.rds")
+write_rds(acs_fy12_fy23_secondary, "data/processed/acs_fy12_fy23_secondary.rds")
