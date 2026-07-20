@@ -84,7 +84,25 @@ clean_f33_pre_essa <- function(df) {
       exp_noninstr_food_bene = v30,
       exp_noninstr_ent_ops_total = v60,
       exp_noninstr_ent_ops_bene = v32,
-      exp_noninstr_other = v65
+      exp_noninstr_other = v65,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
 
     ) |>
     select(
@@ -133,11 +151,29 @@ clean_f33_pre_essa <- function(df) {
       exp_noninstr_food_bene,
       exp_noninstr_ent_ops_total,
       exp_noninstr_ent_ops_bene,
-      exp_noninstr_other
+      exp_noninstr_other,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
 
     ) |>
     # address -1 and -2 codes in expenditure data
-    mutate(across(c11:exp_noninstr_other, ~clean_na(.x))) |>
+    mutate(across(c11:fund_bal_other, ~clean_na(.x))) |>
     # clean up district name formatting
     mutate(
       dist_name = str_to_title(dist_name),
@@ -202,7 +238,25 @@ clean_f33_pre_essa2 <- function(df) {
       exp_noninstr_food_bene = v30,
       exp_noninstr_ent_ops_total = v60,
       exp_noninstr_ent_ops_bene = v32,
-      exp_noninstr_other = v65
+      exp_noninstr_other = v65,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
 
     ) |>
     select(
@@ -254,11 +308,29 @@ clean_f33_pre_essa2 <- function(df) {
       exp_noninstr_food_bene,
       exp_noninstr_ent_ops_total,
       exp_noninstr_ent_ops_bene,
-      exp_noninstr_other
+      exp_noninstr_other,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
 
     ) |>
     # address -1 and -2 codes in expenditure data
-    mutate(across(c11:exp_noninstr_other, ~clean_na(.x))) |>
+    mutate(across(c11:fund_bal_other, ~clean_na(.x))) |>
     # clean up district name formatting
     mutate(
       dist_name = str_to_title(dist_name),
@@ -324,7 +396,25 @@ clean_f33_essa <- function(df) {
       exp_noninstr_food_bene = v30,
       exp_noninstr_ent_ops_total = v60,
       exp_noninstr_ent_ops_bene = v32,
-      exp_noninstr_other = v65
+      exp_noninstr_other = v65,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
 
     ) |>
     select(
@@ -378,10 +468,28 @@ clean_f33_essa <- function(df) {
       exp_noninstr_food_bene,
       exp_noninstr_ent_ops_total,
       exp_noninstr_ent_ops_bene,
-      exp_noninstr_other
+      exp_noninstr_other,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
     ) |>
     # address -1 and -2 codes in expenditure data
-    mutate(across(c11:exp_noninstr_other, ~clean_na(.x))) |> 
+    mutate(across(c11:fund_bal_other, ~clean_na(.x))) |> 
     # clean up district name formatting
     mutate(
       dist_name = str_to_title(dist_name),
@@ -450,7 +558,25 @@ clean_f33_essa2 <- function(df) {
       exp_noninstr_food_bene = v30,
       exp_noninstr_ent_ops_total = v60,
       exp_noninstr_ent_ops_bene = v32,
-      exp_noninstr_other = v65
+      exp_noninstr_other = v65,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
 
     ) |>
     select(
@@ -505,12 +631,30 @@ clean_f33_essa2 <- function(df) {
       exp_noninstr_food_bene,
       exp_noninstr_ent_ops_total,
       exp_noninstr_ent_ops_bene,
-      exp_noninstr_other
+      exp_noninstr_other,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
 
     ) |>
     # address -1 and -2 codes in expenditure data
     mutate(
-      across(c11:exp_noninstr_other, ~clean_na(.x))
+      across(c11:fund_bal_other, ~clean_na(.x))
     ) |> 
     # clean up district name formatting
     mutate(
@@ -586,7 +730,24 @@ clean_f33_covid <- function(df) {
       exp_covid_supp = ae3, # exp from fed covid-19 funding, support services
       exp_covid_cap_out = ae4, # exp from fed covid-19 funding, capital outlay
       exp_covid_tech_supp = ae5, # exp from fed covid-19 funding, tech supplies & services
-      exp_covid_tech_equip = ae6 # exp from fed covid-19 funding, tech equipment
+      exp_covid_tech_equip = ae6, # exp from fed covid-19 funding, tech equipment
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
       
     ) |>
     select(
@@ -646,12 +807,30 @@ clean_f33_covid <- function(df) {
       exp_covid_supp,
       exp_covid_cap_out,
       exp_covid_tech_supp,
-      exp_covid_tech_equip
+      exp_covid_tech_equip,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
 
     ) |>
     # address -1 and -2 codes in expenditure data
     mutate(
-      across(c11:exp_covid_tech_equip, ~clean_na(.x))
+      across(c11:fund_bal_other, ~clean_na(.x))
     ) |> 
     # clean up district name formatting
     mutate(
@@ -731,7 +910,24 @@ clean_f33_covid2 <- function(df) {
       exp_covid_tech_supp = ae5, # exp from fed covid-19 funding, tech supplies & services
       exp_covid_tech_equip = ae6, # exp from fed covid-19 funding, tech equipment
       exp_covid_supp_plant = ae7, # exp from fed covid-19 funding, support services & plant maintenance
-      exp_covid_food = ae8 # exp from fed covid-19 funding, food services
+      exp_covid_food = ae8, # exp from fed covid-19 funding, food services
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total = tcapout, # total capital outlay
+      exp_cap_construction = f12, # construction
+      exp_cap_land = g15, # land & existing structures
+      exp_cap_equip_instr = k09, # instructional equipment
+      exp_cap_equip_other = k10, # other equipment
+      exp_cap_equip_nonspec = k11, # nonspecified equipment
+      exp_debt_interest = i86, # interest on debt
+      debt_lt_begin = `_19h`, # long-term debt outstanding, beginning of fy
+      debt_lt_issued = `_21f`, # long-term debt issued during fy
+      debt_lt_retired = `_31f`, # long-term debt retired during fy
+      debt_lt_end = `_41f`, # long-term debt outstanding, end of fy
+      debt_st_begin = `_61v`, # short-term debt outstanding, beginning of fy
+      debt_st_end = `_66v`, # short-term debt outstanding, end of fy
+      fund_bal_debt_svc = w01, # debt service fund cash & securities, fye
+      fund_bal_bond = w31, # bond fund cash & securities, fye
+      fund_bal_other = w61 # other funds cash & securities, fye
     ) |>
     select(
       ncesid, dist_name, year, state, cbsa, schlev, enroll,
@@ -792,12 +988,30 @@ clean_f33_covid2 <- function(df) {
       exp_covid_tech_supp,
       exp_covid_tech_equip,
       exp_covid_supp_plant,
-      exp_covid_food
+      exp_covid_food,
+
+      # capital, debt service & fund balances (F-33 individual-unit items)
+      exp_cap_total,
+      exp_cap_construction,
+      exp_cap_land,
+      exp_cap_equip_instr,
+      exp_cap_equip_other,
+      exp_cap_equip_nonspec,
+      exp_debt_interest,
+      debt_lt_begin,
+      debt_lt_issued,
+      debt_lt_retired,
+      debt_lt_end,
+      debt_st_begin,
+      debt_st_end,
+      fund_bal_debt_svc,
+      fund_bal_bond,
+      fund_bal_other
 
     ) |>
     # address -1 and -2 codes in expenditure data
     mutate(
-      across(c11:exp_covid_food, ~clean_na(.x))
+      across(c11:fund_bal_other, ~clean_na(.x))
     ) |> 
     # clean up district name formatting
     mutate(

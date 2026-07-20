@@ -138,6 +138,8 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     # include as a check on this new calculation
     # other_sys_pp = other_sys_pay / enroll,
     exp_cur_pp = exp_cur_total / enroll,
+    # capital outlay per pupil (single-year values are lumpy -- see README)
+    exp_cap_total_pp = exp_cap_total / enroll,
     rev_exp_pp_diff = rev_total_pp - exp_cur_pp
   ) |>
   # rename columns
@@ -156,8 +158,8 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     rev_total_unadj, rev_local_unadj, rev_state_unadj, rev_fed_unadj,
     rev_state_unadj_pp, rev_local_unadj_pp,
 
-    exp_cur_pp, rev_exp_pp_diff,
-    exp_cur_st_loc, exp_cur_fed, exp_cur_resa, exp_cur_total,
+    exp_cur_pp, exp_cap_total_pp, rev_exp_pp_diff,
+    exp_cur_st_loc, exp_cur_fed, exp_cur_resa, exp_cur_total, exp_cap_total,
     cpi_sy12, 
     mhi, mean_hhi, mpv,
     adult_pop, ba_plus_pop, ba_plus_pct,
@@ -189,7 +191,16 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     exp_covid_total,
     exp_covid_instr, exp_covid_supp, exp_covid_cap_out,
     exp_covid_tech_supp, exp_covid_tech_equip,
-    exp_covid_supp_plant, exp_covid_food
+    exp_covid_supp_plant, exp_covid_food,
+
+    # capital detail, debt & fund balances (full only; exp_cap_total and
+    # exp_cap_total_pp are placed above so they also land in the skinny file)
+    exp_cap_construction, exp_cap_land,
+    exp_cap_equip_instr, exp_cap_equip_other, exp_cap_equip_nonspec,
+    exp_debt_interest,
+    debt_lt_begin, debt_lt_issued, debt_lt_retired, debt_lt_end,
+    debt_st_begin, debt_st_end,
+    fund_bal_debt_svc, fund_bal_bond, fund_bal_other
 
   ) |>
   # join the year-specific revenue-outlier thresholds (CPI-adjusted to 2012
