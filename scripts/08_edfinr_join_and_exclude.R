@@ -1,4 +1,4 @@
-# 07_edfinr_join_and_exclude.R
+# 08_edfinr_join_and_exclude.R
 
 # load --------
 library(tidyverse)
@@ -30,6 +30,11 @@ saipe_fy12_fy23_clean <- read_rds("data/processed/saipe_fy12_fy23_clean.rds") |>
 # load cpi exclusion data
 cpi_exclusions_sy12 <- read_rds("data/processed/cpi_exclusions_sy12.rds")
 
+# load cwift data (year is integer here; convert to character to match the
+# panel join key)
+cwift_lea_clean <- read_rds("data/processed/cwift_lea_clean.rds") |>
+  mutate(year = as.character(year))
+
 # unify acs data -----
 
 acs_fy12_fy23_all <- bind_rows(
@@ -44,6 +49,7 @@ edfinr_join_fy12_fy23 <- f33_sy12_sy23 |>
   left_join(dir_sy12_sy23, by = c("ncesid", "year")) |>
   left_join(acs_fy12_fy23_all, by = c("ncesid", "year")) |>
   left_join(saipe_fy12_fy23_clean, by = c("ncesid", "year")) |>
+  left_join(cwift_lea_clean, by = c("ncesid", "year")) |>
   left_join(cpi_exclusions_sy12 |> select("year", "cpi_sy12"), by = "year") |>
   select(ncesid, year, state, county, dist_name, state_leaid, enroll, everything())
 
@@ -200,7 +206,10 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     exp_debt_interest,
     debt_lt_begin, debt_lt_issued, debt_lt_retired, debt_lt_end,
     debt_st_begin, debt_st_end,
-    fund_bal_debt_svc, fund_bal_bond, fund_bal_other
+    fund_bal_debt_svc, fund_bal_bond, fund_bal_other,
+
+    # CWIFT labor-cost index (cwift_est + cwift_imputed also added to skinny)
+    cwift_est, cwift_se, cwift_imputed, cwift_impute_method
 
   ) |>
   # join the year-specific revenue-outlier thresholds (CPI-adjusted to 2012
@@ -267,7 +276,7 @@ edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_clean |>
 
 # create df sans expenditure detail
 edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
-  select(ncesid:lea_type_id, osp_pct, c11_spike_flag)
+  select(ncesid:lea_type_id, osp_pct, c11_spike_flag, cwift_est, cwift_imputed)
 
 # export data -----
 write_rds(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.rds")

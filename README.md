@@ -13,6 +13,8 @@ Convert raw data into a clean .rds file for the `edfinr` package
     package](https://walker-data.com/tidycensus/)
 -   U.S Bureau of Labor Statistics [Consumer Price Index for All Urban
     Consumers (CPI-U)](https://data.bls.gov/toppicks?survey=cu)
+-   NCES EDGE [Comparable Wage Index for Teachers
+    (CWIFT)](https://nces.ed.gov/programs/edge/Economic/TeacherWage)
 
 ## Data Processing Methods
 
@@ -250,12 +252,53 @@ Adjustments:
 -   Clean and reformat CPI data for consistency across processing
     scripts
 
+### CWIFT (Comparable Wage Index for Teachers)
+
+Data source: NCES EDGE Comparable Wage Index for Teachers (CWIFT), cleaned by
+`scripts/07_cwift_clean.R` and documented in `data/raw/cwift/SOURCES.md`. CWIFT
+measures regional variation in the wages of comparable (non-teacher) college
+graduates; a value near 1.0 is the national average, above 1.0 a higher-cost
+labor market, below 1.0 lower-cost.
+
+`CWIFT<yyyy>` maps to edfinr fiscal year `yyyy`. Four columns are added to the
+full dataset — `cwift_est` (the index), `cwift_se` (its standard error),
+`cwift_imputed` (logical), and `cwift_impute_method` — of which `cwift_est` and
+`cwift_imputed` are also included in the skinny dataset.
+
+Coverage and imputation (`cwift_impute_method`):
+
+-   **FY2012–FY2014** (`NA`): no CWIFT release exists; these district-years have
+    no index.
+-   **FY2015–FY2019, FY2021, FY2022** (`observed`): direct NCES releases.
+-   **FY2020** (`interpolated_2019_2021`): NCES published no CWIFT2020 (the ACS
+    2020 1-year estimates were withheld for COVID-19 data-quality reasons), so
+    FY2020 is the mean of FY2019 and FY2021 for LEAs present in both. Its
+    `cwift_se` is an approximation (mean of the two neighbor SEs), **not** an
+    NCES-published value.
+-   **FY2023** (`carried_forward_2022`): as of the 2026-07-20 live-check the most
+    recent release is CWIFT2022, so FY2023 carries FY2022 forward, flagged.
+
+**Cautions:**
+
+-   **CWIFT is a labor-cost index, not a general price deflator.** Use it to
+    compare the cost of employing teachers across places — not to deflate
+    non-labor costs such as construction or capital outlay.
+
+-   **Do not double-count with CPI.** CWIFT adjusts for cross-sectional
+    (place-to-place) labor-cost differences; the CPI-U factor (`cpi_sy12`)
+    adjusts for across-time inflation. They serve different purposes — apply at
+    most one of each.
+
+-   **`cwift_imputed` flags non-observed values.** Treat interpolated (FY2020)
+    and carried-forward (FY2023) values with appropriate caution, and note the
+    partial LEA coverage (`NA` where a district is outside the CWIFT universe).
+
 ## Joining Data
 
 -   The joining process is implemented in the
-    `07_edfinr_join_and_exclude.R` script.
+    `08_edfinr_join_and_exclude.R` script.
 -   Data from the F-33 survey, CCD Directory, ACS (unified, elementary,
-    and secondary), and SAIPE sources are merged using left joins on
+    and secondary), SAIPE, and CWIFT sources are merged using left joins on
     shared district identifiers (ncesid) and fiscal year.
 -   The procedure ensures that each district record is enriched with
     revenue, expenditure, demographic, and economic data.
@@ -334,7 +377,7 @@ Users should note the following when working with the `edfinr` datasets:
     (e.g. we found that a charter LEA was listed as MD but is actually
     in AZ, not MD) or most recent barring finding specific rationale for
     discrepancy. These adjustments - include the affected NCES id's -
-    can be found at the end of the `07_edfinr_join_and_exlude.R` script.
+    can be found at the end of the `08_edfinr_join_and_exclude.R` script.
 -   The joined dataset represents a synthesis of data from multiple
     sources; discrepancies in source data formats may lead to minor
     variations.
