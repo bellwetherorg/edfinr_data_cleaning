@@ -50,7 +50,9 @@ Raw variables selected:
 -   Expenditure data, all years: c11, u11, v91, v92, c24, l12, m12, d11,
     q11
 
--   Current expenditure data, 2015-16 and later: ce1, ce2
+-   Current expenditure data: TCURELSC (total current elementary/secondary
+    expenditure), all years; the ESSA fund-type split (ce1, ce2, and — from
+    2017-18 — ce3), 2015-16 and later where states report it
 
 -   Capital, debt service, and fund-balance data, all years: TCAPOUT, F12,
     G15, K09, K10, K11, I86, and the long/short-term debt and fund-balance
@@ -67,12 +69,18 @@ Adjustments:
 -   Replace the F-33 missing-value codes (`-1` and `-2`) with `NA` across the
     revenue, expenditure, capital, and debt columns in every year.
 
--   For 2015-16 and later years (when the current-expenditure breakdown is
-    reported), calculate `exp_cur_total` as the sum of the federal, state/local,
-    and — from 2017-18 — RESA current-expenditure components. Missing components
-    propagate to `NA` rather than being treated as zero, so a district (or an
-    entire state) that did not report the breakdown in a given year is left `NA`
-    rather than assigned an understated total.
+-   `exp_cur_total` is the F-33 item TCURELSC (total current expenditure for
+    elementary/secondary education), which is reported for nearly all districts
+    in every year. The fund-type components `exp_cur_st_loc` (CE1),
+    `exp_cur_fed` (CE2), and `exp_cur_resa` (CE3, from 2017-18) are the ESSA
+    Part XI breakdown, which several states skip entirely (all of Illinois and
+    Minnesota through FY23; New York — including NYC — New Jersey,
+    Massachusetts, Oregon, and others in earlier years); those district-years
+    are `NA` in the component columns but still have `exp_cur_total`. The
+    components do **not** sum exactly to `exp_cur_total`: the ESSA items carry
+    different object exclusions (payments to private, charter, and other
+    school systems), so the CE-sum differs from TCURELSC by more than 2% for
+    roughly 40% of reporting districts.
 
 ### Capital, Debt Service, and Fund Balances
 
@@ -355,12 +363,14 @@ Users should note the following when working with the `edfinr` datasets:
 
 -   Some variables were originally coded with `-1` or `-2` to indicate missing
     or not-applicable values; these have been replaced with `NA` during
-    processing. Missing values propagate through derived totals — for example,
-    `exp_cur_total` is `NA` when any current-expenditure component is missing,
-    rather than being treated as zero. Because several states do not report the
-    current-expenditure breakdown in some years, national sums of
-    `exp_cur_total` fall below external benchmarks (e.g. the Census summary
-    tables) that include those non-reporting states.
+    processing. Missing values propagate through derived totals rather than
+    being treated as zero. `exp_cur_total` is sourced directly from the F-33
+    TCURELSC item and is available for nearly all districts in all years
+    (FY12-FY23); the ESSA fund-type components (`exp_cur_st_loc`,
+    `exp_cur_fed`, `exp_cur_resa`) are `NA` wherever a state skipped that
+    reporting, and they do not sum exactly to `exp_cur_total` because the
+    ESSA items exclude payments to private, charter, and other school
+    systems.
 -   During data processing, we identified a sharp rise in the number of
     California districts appearing only from 2019 onward in the data.
     This reflects the fact that many charter schools became separate
