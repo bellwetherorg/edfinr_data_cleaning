@@ -13,6 +13,10 @@
 #
 # Run from the project root so the relative data/ paths resolve.
 
+# saveRDS/write_parquet do not create directories; make sure the output
+# tree exists (data/processed/ is gitignored, so fresh clones lack it)
+dir.create("data/processed/by_year", recursive = TRUE, showWarnings = FALSE)
+
 scripts <- c(
   "scripts/00_cpi_clean.R",
   "scripts/01_f33_clean.R",
