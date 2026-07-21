@@ -49,6 +49,9 @@ clean_f33_pre_essa <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); the ESSA fund-type
+      # split (CE1/CE2/CE3) does not exist before SY16
+      exp_cur_total = tcurelsc,
 
       # part x
       exp_emp_salary = z32,
@@ -117,6 +120,7 @@ clean_f33_pre_essa <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
 
       exp_emp_salary,
       exp_emp_bene,
@@ -200,6 +204,9 @@ clean_f33_pre_essa2 <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); the ESSA fund-type
+      # split (CE1/CE2/CE3) does not exist before SY16
+      exp_cur_total = tcurelsc,
 
       # part x
       exp_emp_salary = z32,
@@ -271,6 +278,7 @@ clean_f33_pre_essa2 <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
 
       exp_emp_salary,
       exp_emp_bene,
@@ -357,6 +365,9 @@ clean_f33_essa <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); CE1/CE2 are the ESSA
+      # fund-type split, unreported by some states (see README)
+      exp_cur_total = tcurelsc,
       exp_cur_st_loc = ce1,
       exp_cur_fed = ce2,
       # part x
@@ -429,6 +440,7 @@ clean_f33_essa <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
       exp_cur_st_loc,
       exp_cur_fed,
 
@@ -496,11 +508,7 @@ clean_f33_essa <- function(df) {
       # convert year to 4 digit
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
-      enroll = as.numeric(enroll),
-      # calculate current expenditure total; NA components propagate so
-      # districts with unreported CE* values get NA rather than an
-      # understated total (whole states fail to report CE1 in some years)
-      exp_cur_total = exp_cur_fed + exp_cur_st_loc
+      enroll = as.numeric(enroll)
     )
 }
 
@@ -518,6 +526,9 @@ clean_f33_essa2 <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); CE1/CE2/CE3 are the ESSA
+      # fund-type split, unreported by some states (see README)
+      exp_cur_total = tcurelsc,
       exp_cur_st_loc = ce1,
       exp_cur_fed = ce2,
       exp_cur_resa = ce3,
@@ -591,6 +602,7 @@ clean_f33_essa2 <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
       exp_cur_st_loc,
       exp_cur_fed,
       exp_cur_resa,
@@ -662,10 +674,7 @@ clean_f33_essa2 <- function(df) {
       # convert year to 4 digit
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
-      enroll = as.numeric(enroll),
-      # NA components propagate so districts with unreported CE* values
-      # get NA rather than an understated total
-      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
+      enroll = as.numeric(enroll)
     )
 }
 
@@ -683,6 +692,9 @@ clean_f33_covid <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); CE1/CE2/CE3 are the ESSA
+      # fund-type split, unreported by some states (see README)
+      exp_cur_total = tcurelsc,
       exp_cur_st_loc = ce1,
       exp_cur_fed = ce2,
       exp_cur_resa = ce3,
@@ -762,6 +774,7 @@ clean_f33_covid <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
       exp_cur_st_loc,
       exp_cur_fed,
       exp_cur_resa,
@@ -838,10 +851,7 @@ clean_f33_covid <- function(df) {
       # convert year to 4 digit
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
-      enroll = as.numeric(enroll),
-      # NA components propagate so districts with unreported CE* values
-      # get NA rather than an understated total
-      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
+      enroll = as.numeric(enroll)
     )
 }
 
@@ -861,6 +871,9 @@ clean_f33_covid2 <- function(df) {
       rev_local = tlocrev,
       rev_state = tstrev,
       rev_fed = tfedrev,
+      # total current elsec expenditure (TCURELSC); CE1/CE2/CE3 are the ESSA
+      # fund-type split, unreported by some states (see README)
+      exp_cur_total = tcurelsc,
       exp_cur_st_loc = ce1,
       exp_cur_fed = ce2,
       exp_cur_resa = ce3,
@@ -941,6 +954,7 @@ clean_f33_covid2 <- function(df) {
       m12, # payment to local govts
       d11, # rev from other school systems
       q11, # payment to other school systems
+      exp_cur_total,
       exp_cur_st_loc,
       exp_cur_fed,
       exp_cur_resa,
@@ -1019,10 +1033,7 @@ clean_f33_covid2 <- function(df) {
       # convert year to 4 digit
       year = paste0("20", year),
       # make sure enrollment is a numeric variable
-      enroll = as.numeric(enroll),
-      # NA components propagate so districts with unreported CE* values
-      # get NA rather than an understated total
-      exp_cur_total = exp_cur_fed + exp_cur_st_loc + exp_cur_resa
+      enroll = as.numeric(enroll)
     )
 }
 
