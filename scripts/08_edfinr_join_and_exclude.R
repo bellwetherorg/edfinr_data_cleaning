@@ -20,6 +20,97 @@ dir_sy12_sy23 <- read_rds("data/processed/dir_sy12_sy23.rds") |>
   mutate(year = as.character(year)) |>
   select(-enroll, -state)
 
+# following-vintage lea type, used by the exclusion screen below: the
+# directory occasionally miscodes a real district's agency type for a
+# vintage (all MA regionals were "service agency" through SY15-16, AL city
+# districts are miscoded around their formation years), so a district-year
+# is excluded on LEA type only if the following vintage agrees
+lea_type_next <- dir_sy12_sy23 |>
+  transmute(
+    ncesid,
+    year = as.character(as.integer(year) - 1),
+    lea_type_id_next = lea_type_id
+  )
+
+# ma regional rescue list: every MA regional school district was miscoded
+# agency_type 4 ("service agency") in directory vintages SY2011-12 through
+# SY2015-16 and corrected to 1 from SY2016-17. The following-vintage check
+# recovers FY2016 (its next vintage carries the correction) but not
+# FY2012-FY2015, where both vintages carry the miscode. These 60 districts
+# are genuine operating districts under MGL c.71 that file F-33 with
+# enrollment every year and appear in the published panel from FY2016 on,
+# so their FY2012-FY2015 rows are restored via this explicit vetted list
+# (see MA_REGIONAL_RESCUE.md). The list deliberately omits the 26 MA
+# regional vocational-technical districts and 2 districts that merged away
+# in 2014: their F-33 schlev is 05 from FY2013 on, so the school-level
+# screen excludes them in every other year and a rescue would only create
+# a one-year FY2012 blip. A panel-modal type rule was rejected for the
+# same reason: it would rescue the 56 CA county offices of education in
+# FY2012, whose F-33 schlev that year (03; 05 thereafter) slips past the
+# school-level screen.
+ma_regional_rescue <- c(
+  "2500001", # Quabbin
+  "2500002", # Spencer-E Brookfield
+  "2500013", # Southwick-Tolland-Granville
+  "2500014", # Chesterfield-Goshen
+  "2500043", # Up-Island Regional
+  "2500067", # Manchester Essex Regional
+  "2500541", # Somerset Berkley
+  "2500542", # Ayer Shirley
+  "2500544", # Monomoy Regional
+  "2501710", # Acton-Boxborough
+  "2501780", # Adams-Cheshire (Hoosac Valley)
+  "2501920", # Amherst-Pelham
+  "2502040", # Ashburnham-Westminster
+  "2502160", # Athol-Royalston
+  "2502530", # Berkshire Hills
+  "2502580", # Berlin-Boylston
+  "2502715", # Blackstone-Millville
+  "2503030", # Bridgewater-Raynham
+  "2503070", # Bristol County Agricultural
+  "2503390", # Central Berkshire
+  "2503870", # Concord-Carlisle
+  "2504140", # Dennis-Yarmouth
+  "2504200", # Dighton-Rehoboth
+  "2504290", # Dover-Sherborn
+  "2504360", # Dudley-Charlton
+  "2504560", # Nauset
+  "2505070", # Freetown-Lakeville
+  "2505100", # Frontier
+  "2505160", # Gateway
+  "2505270", # Gill-Montague
+  "2505500", # Groton-Dunstable
+  "2505670", # Hamilton-Wenham
+  "2505730", # Hampden-Wilbraham
+  "2505740", # Hampshire
+  "2506000", # Hawlemont
+  "2506510", # King Philip
+  "2506930", # Lincoln-Sudbury
+  "2507380", # Martha's Vineyard
+  "2507410", # Masconomet
+  "2507680", # Mendon-Upton
+  "2507990", # Mohawk Trail
+  "2508160", # Mount Greylock
+  "2508280", # Narragansett
+  "2508310", # Nashoba
+  "2508530", # New Salem-Wendell
+  "2508650", # Norfolk County Agricultural
+  "2508790", # North Middlesex
+  "2508910", # Northboro-Southboro
+  "2509150", # Old Rochester
+  "2509450", # Pentucket
+  "2509600", # Pioneer Valley
+  "2509900", # Ralph C Mahar
+  "2510830", # Silver Lake
+  "2511040", # Southern Berkshire
+  "2511490", # Tantasqua
+  "2511740", # Triton
+  "2511880", # Wachusett
+  "2512100", # Quaboag Regional
+  "2512930", # Whitman-Hanson
+  "2513321"  # Farmington River
+)
+
 # load f33 data
 f33_sy12_sy23 <- read_rds("data/processed/f33_sy12_sy23.rds") |>
   select(-dist_name)
@@ -246,11 +337,21 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     cpi_exclusions_sy12 |> select(year, exclude_lo, exclude_hi),
     by = "year"
   ) |>
+  left_join(lea_type_next, by = c("ncesid", "year")) |>
   # id leas for exclusion
   mutate(
     exclusion_cat = case_when(
-      # lea type outliers
-      !lea_type_id %in% c(1, 2, 3, 7) ~ "LEA Type",
+      # no same-year directory row (closed or not yet in the LEA universe)
+      is.na(lea_type_id) ~ "LEA Type",
+
+      # lea type outliers; a same-vintage miscode alone does not exclude a
+      # district -- the following vintage must agree (rows the next vintage
+      # codes as a regular district/supervisory union/charter are kept), and
+      # the vetted MA regionals are exempt (miscoded in both vintages
+      # FY2012-FY2015; see ma_regional_rescue above)
+      !lea_type_id %in% c(1, 2, 3, 7) &
+        !lea_type_id_next %in% c(1, 2, 3, 7) &
+        !ncesid %in% ma_regional_rescue ~ "LEA Type",
 
       # sch type outliers
       !schlev %in% c("01", "02", "03") &
@@ -268,8 +369,8 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
       TRUE ~ "Safe"
     )
   ) |>
-  # drop the joined threshold helper columns
-  select(-exclude_lo, -exclude_hi)
+  # drop the joined threshold and lea-type helper columns
+  select(-exclude_lo, -exclude_hi, -lea_type_id_next)
 
 edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_pre_exclusion |>
   # filter out revenue outliers
