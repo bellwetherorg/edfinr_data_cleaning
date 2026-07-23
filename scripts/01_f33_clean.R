@@ -34,11 +34,45 @@ clean_na <- function(x) {
 
 }
 
+# F-33 sometimes zero-fills missing items instead of using the -1 code; the
+# FL_ companion flags identify these rows (M = missing, N = not applicable).
+# Convert flagged zero-fills to NA for the items we ship as-is. The
+# revenue-adjustment inputs (c11, u11, v91, v92, q11, l12, m12, d11, c24)
+# are deliberately excluded: NA-ing them would propagate into the adjusted
+# revenue columns for a large share of the panel, so their unreported
+# values stay 0 (i.e., no adjustment) -- see README.
+# Flag names drop a leading underscore: item `_19h` pairs with `fl_19h`.
+f33_flag_aware_items <- c(
+  paste0("ae", 1:8),
+  "w01", "w31", "w61",
+  "f12", "g15", "k09", "k10", "k11", "i86",
+  "_19h", "_21f", "_31f", "_41f", "_61v", "_66v",
+  "ce1", "ce2", "ce3",
+  "e13", "z33", "v10", "e17", "v11", "v12", "e07", "v13", "v14",
+  "e08", "v15", "v16", "e09", "v17", "v18", "v40", "v21", "v22",
+  "v45", "v23", "v24", "v90", "v37", "v38", "e11", "v29", "v30",
+  "v60", "v32", "v65", "z32", "z34", "v93", "v95", "v02", "k14"
+)
+
+na_flagged <- function(df, items = f33_flag_aware_items) {
+  for (item in items) {
+    flag <- paste0("fl_", sub("^_", "", item))
+    if (item %in% names(df) && flag %in% names(df)) {
+      df[[item]] <- ifelse(trimws(df[[flag]]) %in% c("M", "N"),
+                           NA_real_, df[[item]])
+    }
+  }
+  df
+}
+
 
 # create cleaning function for sy12-sy14
 clean_f33_pre_essa <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,
@@ -194,6 +228,9 @@ clean_f33_pre_essa <- function(df) {
 clean_f33_pre_essa2 <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,
@@ -355,6 +392,9 @@ clean_f33_pre_essa2 <- function(df) {
 clean_f33_essa <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,
@@ -516,6 +556,9 @@ clean_f33_essa <- function(df) {
 clean_f33_essa2 <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,
@@ -682,6 +725,9 @@ clean_f33_essa2 <- function(df) {
 clean_f33_covid <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,
@@ -861,6 +907,9 @@ clean_f33_covid <- function(df) {
 clean_f33_covid2 <- function(df) {
   df |>
     rename_with(tolower) |>
+    # convert flagged zero-filled missing values to NA before the flag
+    # columns are dropped by select()
+    na_flagged() |>
     rename(
       state = stabbr,
       ncesid = leaid,

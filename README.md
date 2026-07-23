@@ -69,6 +69,26 @@ Adjustments:
 -   Replace the F-33 missing-value codes (`-1` and `-2`) with `NA` across the
     revenue, expenditure, capital, and debt columns in every year.
 
+-   Convert flagged zero-filled missing values to `NA`. F-33 codes missingness
+    two ways: the `-1`/`-2` codes above, and — for some items and states —
+    a literal `0` with an `FL_*` companion flag of `M` (missing) or `N` (not
+    applicable). The `na_flagged()` step in `01_f33_clean.R` applies the flags
+    to the expenditure-detail, COVID (`AE1`-`AE8`), capital-detail, debt,
+    fund-balance, and CE fund-type items before the flag columns are dropped.
+    The largest effect is on the COVID columns: New York (including NYC) never
+    reported them in any year, and California stopped after FY20, so those
+    district-years were previously fake zeros. Genuine reported zeros
+    (flag `R`) are preserved. **Deliberately excluded** are the
+    revenue-adjustment inputs (`c11`, `u11`, `v91`, `v92`, `q11`, `l12`,
+    `m12`, `d11`, `c24`): converting their zero-fills to `NA` would propagate
+    into the adjusted revenue columns for a large share of districts, so
+    unreported values there remain `0` (i.e., no adjustment). One consequence
+    is that `exp_pay_private_sch`, `exp_pay_charter_sch`, `exp_pay_other_lea`,
+    and `osp_pct` retain zero-filled values where states did not report;
+    the widely observed "`osp_pct` exactly zero" pattern is substantially
+    this. Summary items (`TOTALREV`, `TCURELSC`, `TCAPOUT`) carry no flags
+    and cannot be repaired this way.
+
 -   `exp_cur_total` is the F-33 item TCURELSC (total current expenditure for
     elementary/secondary education), which is reported for nearly all districts
     in every year. The fund-type components `exp_cur_st_loc` (CE1),
@@ -371,6 +391,14 @@ Users should note the following when working with the `edfinr` datasets:
     reporting, and they do not sum exactly to `exp_cur_total` because the
     ESSA items exclude payments to private, charter, and other school
     systems.
+-   The COVID expenditure columns (`exp_covid_*`) are `NA` — not zero — for
+    states that did not report them: all of New York in every year FY20-FY23
+    and California from FY21 onward, among others. A `0` in these columns is
+    a genuine reported zero (common in FY20, when most ESSER funds were not
+    yet spent). National sums are unaffected, but per-state COVID spending
+    comparisons must account for the non-reporting states. The same
+    flag-aware handling applies to the capital-detail, debt, and
+    fund-balance columns.
 -   During data processing, we identified a sharp rise in the number of
     California districts appearing only from 2019 onward in the data.
     This reflects the fact that many charter schools became separate
