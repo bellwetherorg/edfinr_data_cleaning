@@ -58,7 +58,12 @@ na_flagged <- function(df, items = f33_flag_aware_items) {
   for (item in items) {
     flag <- paste0("fl_", sub("^_", "", item))
     if (item %in% names(df) && flag %in% names(df)) {
-      df[[item]] <- ifelse(trimws(df[[flag]]) %in% c("M", "N"),
+      # only zero-filled cells: some state-years carry genuine reported
+      # values under an M/N flag (e.g. all NJ FY12 expenditure detail,
+      # ID FY13-14 debt stocks); NA-ing those would discard real data,
+      # so a nonzero value wins over its flag
+      df[[item]] <- ifelse(trimws(df[[flag]]) %in% c("M", "N") &
+                             df[[item]] == 0,
                            NA_real_, df[[item]])
     }
   }
