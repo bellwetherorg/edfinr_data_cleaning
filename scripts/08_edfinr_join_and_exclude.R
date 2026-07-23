@@ -24,6 +24,16 @@ dir_sy12_sy23 <- read_rds("data/processed/dir_sy12_sy23.rds") |>
 f33_sy12_sy23 <- read_rds("data/processed/f33_sy12_sy23.rds") |>
   select(-dist_name)
 
+# canary: the f33 input must postdate the flag-aware NA pass (see
+# FLAG_NA_REGRESSION_FIX_PLAN.md); NYC never reported the COVID items, so a
+# zero here means a stale pre-flag rds
+stopifnot(
+  f33_sy12_sy23 |>
+    filter(ncesid == "3620580", year == "2021") |>
+    pull(exp_covid_total) |>
+    is.na()
+)
+
 # load saipe data
 saipe_fy12_fy23_clean <- read_rds("data/processed/saipe_fy12_fy23_clean.rds") |>
   select(-state, -dist_name)
@@ -53,6 +63,15 @@ edfinr_join_fy12_fy23 <- f33_sy12_sy23 |>
   left_join(cwift_lea_clean, by = c("ncesid", "year")) |>
   left_join(cpi_exclusions_sy12 |> select("year", "cpi_sy12"), by = "year") |>
   select(ncesid, year, state, county, dist_name, state_leaid, enroll, everything())
+
+# guard against silent directory-join failures: a year-alignment bug or a bad
+# vintage would show up as F-33 district-years with no directory match, which
+# then get dropped downstream as "LEA Type" exclusions (lea_type_id is NA)
+dir_match_rate <- edfinr_join_fy12_fy23 |>
+  filter(rev_total > 0, enroll > 0) |>
+  summarise(rate = mean(!is.na(lea_type_id))) |>
+  pull(rate)
+stopifnot(dir_match_rate > 0.97)
 
 
 # examine incomplete data -------

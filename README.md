@@ -179,6 +179,15 @@ Data source: NCES CCD Directory data obtained via the
 [educationdata](https://educationdata.urban.org/documentation/#r)
 package.
 
+Year convention: the pipeline labels every row by fiscal year, the last
+year of the school year (year 2012 = SY 2011-12), matching the F-33
+survey. The Urban Institute API labels directory years by the fall of
+the school year (2011 = SY 2011-12), so `02_ccd_clean.R` requests Urban
+year `fy - 1` and re-labels it to `fy` at download time (see the
+`get_dir_fy()` helper). This keeps directory attributes (district name,
+county, urbanicity, LEA type) aligned with the finance data for the same
+school year.
+
 Raw variables selected:
 
 -   Core district identifiers and location: state, ncesid (lea id),
@@ -400,14 +409,18 @@ Users should note the following when working with the `edfinr` datasets:
     reporting, and they do not sum exactly to `exp_cur_total` because the
     ESSA items exclude payments to private, charter, and other school
     systems.
--   The COVID expenditure columns (`exp_covid_*`) are `NA` — not zero — for
-    states that did not report them: all of New York in every year FY20-FY23
-    and California from FY21 onward, among others. A `0` in these columns is
-    a genuine reported zero (common in FY20, when most ESSER funds were not
-    yet spent). National sums are unaffected, but per-state COVID spending
-    comparisons must account for the non-reporting states. The same
-    flag-aware handling applies to the capital-detail, debt, and
-    fund-balance columns.
+-   The COVID expenditure columns (`exp_covid_*`) are `NA` — not zero — where
+    districts did not report them: all of New York in every year FY20-FY23,
+    and roughly a third to half of California districts from FY21 onward,
+    among others. A `0` in these columns is a genuine reported zero (common
+    in FY20, when most ESSER funds were not yet spent). National sums are
+    unaffected, but per-state COVID spending comparisons must account for
+    the non-reporting districts. The same flag-aware handling applies to the
+    capital-detail, debt, and fund-balance columns. Only zero-filled
+    flagged cells become `NA`: a handful of state-years carry genuine
+    reported values under a missing/not-applicable flag (e.g. all NJ FY12
+    expenditure detail, ID FY13-14 debt stocks), and those values are
+    retained.
 -   During data processing, we identified a sharp rise in the number of
     California districts appearing only from 2019 onward in the data.
     This reflects the fact that many charter schools became separate
@@ -418,13 +431,11 @@ Users should note the following when working with the `edfinr` datasets:
     up in the F-33 finance survey (with blanks or flags if they report
     no finance data), and Census’s SAIPE and ACS school‐district
     products (which mirror NCES LEA boundaries).
--   Some district were found to have more than 1 state within the data,
-    even post cleaning and exclusions. These districts' state was
-    manually changed within the clean data to their most accurate state
-    (e.g. we found that a charter LEA was listed as MD but is actually
-    in AZ, not MD) or most recent barring finding specific rationale for
-    discrepancy. These adjustments - include the affected NCES id's -
-    can be found at the end of the `08_edfinr_join_and_exclude.R` script.
+-   The `state` column is sourced from the F-33 survey only; state fields
+    from the other sources (CCD Directory, SAIPE, ACS) are dropped before
+    the join. Earlier releases carried manual corrections for a handful of
+    districts whose sources disagreed on state; those are no longer needed,
+    and each NCES ID maps to a single state in the published data.
 -   The joined dataset represents a synthesis of data from multiple
     sources; discrepancies in source data formats may lead to minor
     variations.
