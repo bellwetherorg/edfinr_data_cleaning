@@ -20,6 +20,18 @@ dir_sy12_sy23 <- read_rds("data/processed/dir_sy12_sy23.rds") |>
   mutate(year = as.character(year)) |>
   select(-enroll, -state)
 
+# following-vintage lea type, used by the exclusion screen below: the
+# directory occasionally miscodes a real district's agency type for a
+# vintage (all MA regionals were "service agency" through SY15-16, AL city
+# districts are miscoded around their formation years), so a district-year
+# is excluded on LEA type only if the following vintage agrees
+lea_type_next <- dir_sy12_sy23 |>
+  transmute(
+    ncesid,
+    year = as.character(as.integer(year) - 1),
+    lea_type_id_next = lea_type_id
+  )
+
 # load f33 data
 f33_sy12_sy23 <- read_rds("data/processed/f33_sy12_sy23.rds") |>
   select(-dist_name)
@@ -246,11 +258,18 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     cpi_exclusions_sy12 |> select(year, exclude_lo, exclude_hi),
     by = "year"
   ) |>
+  left_join(lea_type_next, by = c("ncesid", "year")) |>
   # id leas for exclusion
   mutate(
     exclusion_cat = case_when(
-      # lea type outliers
-      !lea_type_id %in% c(1, 2, 3, 7) ~ "LEA Type",
+      # no same-year directory row (closed or not yet in the LEA universe)
+      is.na(lea_type_id) ~ "LEA Type",
+
+      # lea type outliers; a same-vintage miscode alone does not exclude a
+      # district -- the following vintage must agree (rows the next vintage
+      # codes as a regular district/supervisory union/charter are kept)
+      !lea_type_id %in% c(1, 2, 3, 7) &
+        !lea_type_id_next %in% c(1, 2, 3, 7) ~ "LEA Type",
 
       # sch type outliers
       !schlev %in% c("01", "02", "03") &
@@ -268,8 +287,8 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
       TRUE ~ "Safe"
     )
   ) |>
-  # drop the joined threshold helper columns
-  select(-exclude_lo, -exclude_hi)
+  # drop the joined threshold and lea-type helper columns
+  select(-exclude_lo, -exclude_hi, -lea_type_id_next)
 
 edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_pre_exclusion |>
   # filter out revenue outliers
