@@ -382,7 +382,14 @@ Coverage and imputation (`cwift_impute_method`):
 -   Districts with enrollment less than or equal to 0 are removed.
 -   Districts with total revenue less than or equal to 0 are removed.
 -   Districts with invalid LEA type (i.e. where lea_type_id is not one
-    of 1, 2, 3, or 7) are excluded.
+    of 1, 2, 3, or 7) are excluded — but only when the following directory
+    vintage agrees. The directory occasionally miscodes a real district's
+    agency type for a vintage (all MA regional districts were coded
+    "service agency" through SY 2015-16; several AL city districts are
+    miscoded around their formation years), so a district-year whose
+    following vintage codes it as a regular district, supervisory union,
+    or charter is retained. District-years with no same-year directory
+    row at all are excluded.
 -   Districts with invalid school level type (i.e. where schlev is not
     one of "01", "02", or "03", except for specified CA exceptions) are
     excluded.

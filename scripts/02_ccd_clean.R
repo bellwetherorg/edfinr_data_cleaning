@@ -7,111 +7,22 @@ library(educationdata)
 options(scipen = 999)
 
 # download ccd directory data ----
-# 2012 education data
-dir_sy12_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2012")
-)
+# Download one fiscal year of CCD directory data. Urban educationdata labels
+# directory years by the FALL of the school year (2011 = SY 2011-12), while
+# this pipeline labels years by the fiscal year, i.e. the LAST year of the
+# school year (2012 = SY 2011-12). Request Urban year fy - 1, then re-label
+# so the year column joins correctly against F-33.
+get_dir_fy <- function(fy) {
+  get_education_data(
+    level = "school-districts",
+    source = "ccd",
+    topic = "directory",
+    filters = list(year = as.character(fy - 1))
+  ) |>
+    mutate(year = fy)
+}
 
-# 2013 directory data
-dir_sy13_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2013")
-)
-
-# 2014 directory data
-dir_sy14_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2014")
-)
-
-# 2015 directory data
-dir_sy15_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2015")
-)
-
-# 2016 directory data
-dir_sy16_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2016")
-)
-
-# 2017 directory data
-dir_sy17_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2017")
-)
-
-# 2018 directory data
-dir_sy18_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2018")
-)
-
-# 2019 directory data
-dir_sy19_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2019")
-)
-
-# 2020 directory data
-dir_sy20_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2020")
-)
-
-# 2021 directory data
-dir_sy21_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2021")
-)
-
-# 2022 directory data
-dir_sy22_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2022")
-)
-
-# 2023 directory data
-dir_sy23_raw <- get_education_data(
-  level = "school-districts",
-  source = "ccd",
-  topic = "directory",
-  filters = list(year = "2023")
-)
-
-# join data ----
-dir_sy12_sy23_raw <- bind_rows(
-  dir_sy12_raw, dir_sy13_raw,
-  dir_sy14_raw, dir_sy15_raw,
-  dir_sy16_raw, dir_sy17_raw,
-  dir_sy18_raw, dir_sy19_raw,
-  dir_sy20_raw, dir_sy21_raw,
-  dir_sy22_raw, dir_sy23_raw
-)
+dir_sy12_sy23_raw <- map(2012:2023, get_dir_fy) |> list_rbind()
 
 # write raw file for cleaning later ----
 # write_rds(dir_sy12_sy23_raw, "data/raw/dir_sy12_sy23_raw.rds")
