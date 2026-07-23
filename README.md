@@ -104,7 +104,7 @@ Adjustments:
 
 ### Capital, Debt Service, and Fund Balances
 
-Beginning with the 2022-23 data update, the F-33 cleaning step also carries 17
+Beginning with the 2022-23 data update, the F-33 cleaning step also carries 18
 capital, debt-service, and fund-balance variables from the district-level F-33
 files for users focused on school facilities. All are available for every year
 (2011-12 onward).
@@ -126,8 +126,15 @@ Variables:
 -   **Fund balances (fiscal year-end):** `fund_bal_debt_svc`, `fund_bal_bond`,
     and `fund_bal_other`.
 
-`exp_cap_total` and `exp_cap_total_pp` are included in both the full and skinny
-datasets; the remaining 15 variables are in the full dataset only.
+-   **Capital/debt-service state revenue:** `rev_state_cap_debt` (F-33 item
+    C11) — state revenue restricted to capital outlay and debt service. This is
+    the amount netted out of the adjusted `rev_state` (see "Adjustments"
+    below). As a revenue-adjustment input it is deliberately excluded from the
+    flagged-zero-to-`NA` conversion, so unreported values are `0`, not `NA`.
+
+`exp_cap_total`, `exp_cap_total_pp`, and `rev_state_cap_debt` are included in
+both the full and skinny datasets; the remaining 15 variables are in the full
+dataset only.
 
 **Cautions:**
 
@@ -346,7 +353,9 @@ Coverage and imputation (`cwift_impute_method`):
     (`u11`), and — proportionally — payments to other school systems. The
     original values are retained as `rev_*_unadj`; `rev_state_unadj_pp` and
     `rev_local_unadj_pp` were added in the 2022-23 update for direct
-    adjusted-vs-unadjusted comparison.
+    adjusted-vs-unadjusted comparison. The `c11` amount itself is shipped as
+    `rev_state_cap_debt` (full and skinny) so users can see the size of the
+    state-revenue adjustment directly.
 
 -   Two anomaly indicators were added in the 2022-23 update:
     -   `osp_pct`: the share of unadjusted total revenue paid to other systems

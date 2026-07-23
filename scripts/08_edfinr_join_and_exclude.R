@@ -117,7 +117,7 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     # remove non-adjusted revenue and interim columns
   select(
     -rev_total, -rev_local, -rev_state, -rev_fed,
-    -c11, -u11, -c24, -l12, -m12, -d11, 
+    -u11, -c24, -l12, -m12, -d11,
     -rev_state_adj_temp, -rev_local_adj_temp,
     -rev_total_adj_temp, -state_adj_pct, -local_adj_pct, -fed_adj_pct
   ) |>
@@ -126,7 +126,11 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     rev_local = rev_local_adj,
     rev_state = rev_state_adj,
     rev_fed = rev_fed_adj,
-    rev_total = rev_total_adj
+    rev_total = rev_total_adj,
+    # expose the capital outlay/debt service state revenue (f-33 item C11)
+    # subtracted in the state revenue adjustment above; zero-filled rather
+    # than NA-ed because it feeds that arithmetic
+    rev_state_cap_debt = c11
   ) |>
   # create pp vars
   mutate(
@@ -164,6 +168,9 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     rev_total, rev_local, rev_state, rev_fed,
     rev_total_unadj, rev_local_unadj, rev_state_unadj, rev_fed_unadj,
     rev_state_unadj_pp, rev_local_unadj_pp,
+    # placed above lea_type_id so it also lands in the skinny file, letting
+    # skinny users reconstruct the state revenue adjustment
+    rev_state_cap_debt,
 
     exp_cur_pp, exp_cap_total_pp, rev_exp_pp_diff,
     exp_cur_st_loc, exp_cur_fed, exp_cur_resa, exp_cur_total, exp_cap_total,
