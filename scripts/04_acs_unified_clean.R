@@ -115,6 +115,9 @@ acs_fy19_raw <- get_acs(
   mutate(year = "2019")
 
 # pull the 2020 acs data
+# FY2020 onward the pulls are nationwide (no state filter), so they also
+# return Puerto Rico districts; those never match an F-33 row and drop out
+# in the script 08 left join
 acs_fy20_raw <- get_acs(
   variables = acs_vars,
   geography = "school district (unified)",
@@ -167,7 +170,17 @@ acs_fy12_fy23_unified <- acs_fy12_fy23_unified_raw |>
     ncesid = "GEOID",
     dist_name = NAME
   ) |>
-  separate(dist_name, c("dist_name", "state"), sep = ",") |>
+  # NAME may carry a county disambiguator ("X ISD, Bexar County, Texas"),
+  # so take the last comma segment as the state and the first as the name
+  # (a plain two-column separate() puts the county in state)
+  mutate(
+    state = str_trim(str_extract(dist_name, "[^,]+$")),
+    dist_name = str_extract(dist_name, "^[^,]+")
+  ) |>
+  # drop census "remainder of state" pseudo-districts: they aggregate the
+  # territory outside this geography's districts and repeat across the
+  # unified/elementary/secondary files, duplicating (ncesid, year) keys
+  filter(!str_detect(ncesid, "99999$")) |>
   select(-moe) |>
   mutate(
     dist_name = str_to_title(dist_name),
@@ -179,17 +192,22 @@ acs_fy12_fy23_unified <- acs_fy12_fy23_unified_raw |>
   ) |> 
   mutate(
     ba_plus_pop = pop_ba + pop_ma + pop_pro + pop_phd,
-    ba_plus_pct = ba_plus_pop / pop_total,
+    # zero-population districts make these shares undefined; return NA
+    # rather than NaN so non-R parquet consumers see a missing value
+    ba_plus_pct = if_else(pop_total > 0, ba_plus_pop / pop_total, NA),
     adult_pop = pop_total,
     # acs has no direct mean household income table at the district level,
     # so derive it from aggregate income / households
-    mean_hhi = agg_hhi / households,
-    owner_pct = occ_owner / occ_total,
-    snap_pct = snap_hh / snap_total,
-    unemp_rate = unemp / lf_civilian
+    mean_hhi = if_else(households > 0, agg_hhi / households, NA),
+    owner_pct = if_else(occ_total > 0, occ_owner / occ_total, NA),
+    snap_pct = if_else(snap_total > 0, snap_hh / snap_total, NA),
+    unemp_rate = if_else(lf_civilian > 0, unemp / lf_civilian, NA)
   ) |>
+  # explicit names, not a positional range: mutate() appends state after
+  # year, so ncesid:year would silently drop it
   select(
-    ncesid:year, mhi, mean_hhi, mpv, adult_pop, ba_plus_pop, ba_plus_pct,
+    ncesid, dist_name, state, year,
+    mhi, mean_hhi, mpv, adult_pop, ba_plus_pop, ba_plus_pct,
     gini, owner_pct, snap_pct, unemp_rate
   )
 

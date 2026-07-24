@@ -1,6 +1,7 @@
 # run_all.R
 # Run the full edfinr data-prep pipeline (00-08) in order, writing all
 # processed .rds outputs to data/processed/. Currently covers FY2012-FY2023.
+# To add a new fiscal year, follow docs/ANNUAL_UPDATE_RUNBOOK.md.
 #
 # Prerequisites:
 #   - Raw F-33 CCD SDF files in data/raw/ccd/ (latest: sdf23_1a.txt)

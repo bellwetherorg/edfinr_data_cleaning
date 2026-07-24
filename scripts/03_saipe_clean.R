@@ -108,7 +108,11 @@ saipe_fy12_fy23_clean <- saipe_fy12_fy23_raw |>
     student_pop = as.numeric(student_pop),
     stpov_pop = as.numeric(stpov_pop)
   ) |>
-  mutate(stpov_pct = stpov_pop / student_pop) |>
+  # a handful of district-years report zero school-age population; the
+  # poverty share is undefined there, so return NA rather than NaN
+  mutate(
+    stpov_pct = if_else(student_pop > 0, stpov_pop / student_pop, NA)
+  ) |>
   # create the ncesid
   mutate(ncesid = paste(state_id, dist_id, sep = "")) |>
   select(

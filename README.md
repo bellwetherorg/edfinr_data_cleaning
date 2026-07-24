@@ -370,12 +370,16 @@ Coverage and imputation (`cwift_impute_method`):
     -   `osp_pct`: the share of unadjusted total revenue paid to other systems
         (private schools, charters, other LEAs), which makes the size of the
         proportional adjustment visible.
-    -   `c11_spike_flag`: `TRUE` for district-years where the `c11` state-revenue
-        adjustment removed more than 50% of unadjusted state revenue *and*
-        exceeded the district's own historical median by more than 25 percentage
-        points. These typically reflect one-time state capital grants (e.g. MA
-        MSBA, CO BEST) rather than changes in operating aid, so `rev_state_pp`
-        should be interpreted with care in flagged rows.
+    -   `c11_spike_flag`: `TRUE` for district-years where `rev_state_cap_debt`
+        (F-33 item C11) exceeds 50% of unadjusted state revenue *and* that C11
+        share sits more than 25 percentage points above the district's own
+        historical median share. The share is computed from C11 directly, so
+        the proportional payments-to-other-systems adjustment cannot trigger
+        the flag. The flag is `NA` where `rev_state_unadj` is zero, since the
+        share is undefined there. Flagged rows typically reflect one-time
+        state capital grants (e.g. MA MSBA, CO BEST) rather than changes in
+        operating aid, so `rev_state_pp` should be interpreted with care in
+        flagged rows.
 
 ## Exclusions
 
@@ -394,7 +398,10 @@ Coverage and imputation (`cwift_impute_method`):
     following-vintage check cannot recover FY2012-FY2015 for those
     districts; an explicit vetted list of 60 MA regional districts
     (`ma_regional_rescue` in `scripts/08_edfinr_join_and_exclude.R`)
-    restores them. See `MA_REGIONAL_RESCUE.md` for the vetting.
+    restores them. See `docs/MA_REGIONAL_RESCUE.md` for the vetting. Note that
+    the newest year in the panel has no following vintage yet, so its
+    LEA-type exclusions rest on the same-year vintage alone and may revise
+    slightly when the next directory year is added.
 -   Districts with invalid school level type (i.e. where schlev is not
     one of "01", "02", or "03", except for specified CA exceptions) are
     excluded.

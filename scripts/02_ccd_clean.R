@@ -11,15 +11,36 @@ options(scipen = 999)
 # directory years by the FALL of the school year (2011 = SY 2011-12), while
 # this pipeline labels years by the fiscal year, i.e. the LAST year of the
 # school year (2012 = SY 2011-12). Request Urban year fy - 1, then re-label
-# so the year column joins correctly against F-33.
-get_dir_fy <- function(fy) {
-  get_education_data(
-    level = "school-districts",
-    source = "ccd",
-    topic = "directory",
-    filters = list(year = as.character(fy - 1))
-  ) |>
-    mutate(year = fy)
+# so the year column joins correctly against F-33. Do not "fix" the offset:
+# see docs/CCD_DIRECTORY_YEAR_ALIGNMENT.md.
+# the urban api intermittently drops a page mid-pull ("Query page not
+# found"), which would otherwise kill the whole run; retry with backoff
+get_dir_fy <- function(fy, attempts = 4) {
+  for (i in seq_len(attempts)) {
+    result <- tryCatch(
+      get_education_data(
+        level = "school-districts",
+        source = "ccd",
+        topic = "directory",
+        filters = list(year = as.character(fy - 1))
+      ),
+      error = function(e) e
+    )
+    if (!inherits(result, "error")) {
+      return(mutate(result, year = fy))
+    }
+    if (i < attempts) {
+      message(
+        "directory pull for FY", fy, " failed (", conditionMessage(result),
+        "); retrying in ", 30 * i, "s"
+      )
+      Sys.sleep(30 * i)
+    }
+  }
+  stop(
+    "directory pull for FY", fy, " failed after ", attempts, " attempts: ",
+    conditionMessage(result)
+  )
 }
 
 dir_sy12_sy23_raw <- map(2012:2023, get_dir_fy) |> list_rbind()
@@ -52,7 +73,18 @@ dir_sy12_sy23 <- dir_sy12_sy23_raw |>
     # ell enrollment is a numeric variable
     enroll = as.numeric(enroll),
     sped_enroll = as.numeric(sped_enroll),
-    ell_enroll = as.numeric(ell_enroll)
+    ell_enroll = as.numeric(ell_enroll),
+    # urban's api encodes missing/not-applicable/suppressed values as
+    # -1/-2/-3; left as-is they read as negative counts, so convert to NA
+    across(
+      c(enroll, sped_enroll, ell_enroll, total_teachers_fte, school_count),
+      ~ if_else(.x < 0, NA, .x)
+    )
+  ) |>
+  # the same sentinel codes in the locale field would otherwise persist as
+  # their own factor levels (e.g. "-2") in the urbanicity columns
+  mutate(
+    urbanicity_id = if_else(as.integer(urbanicity_id) < 0, NA, urbanicity_id)
   ) |>
   # keep raw 12-code nces locale and its subcategory label
   mutate(

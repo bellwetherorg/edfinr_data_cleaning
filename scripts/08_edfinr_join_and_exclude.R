@@ -40,7 +40,7 @@ lea_type_next <- dir_sy12_sy23 |>
 # are genuine operating districts under MGL c.71 that file F-33 with
 # enrollment every year and appear in the published panel from FY2016 on,
 # so their FY2012-FY2015 rows are restored via this explicit vetted list
-# (see MA_REGIONAL_RESCUE.md). The list deliberately omits the 26 MA
+# (see docs/MA_REGIONAL_RESCUE.md). The list deliberately omits the 26 MA
 # regional vocational-technical districts and 2 districts that merged away
 # in 2014: their F-33 schlev is 05 from FY2013 on, so the school-level
 # screen excludes them in every other year and a rescue would only create
@@ -115,15 +115,20 @@ ma_regional_rescue <- c(
 f33_sy12_sy23 <- read_rds("data/processed/f33_sy12_sy23.rds") |>
   select(-dist_name)
 
-# canary: the f33 input must postdate the flag-aware NA pass (see
-# FLAG_NA_REGRESSION_FIX_PLAN.md); NYC never reported the COVID items, so a
-# zero here means a stale pre-flag rds
+# canary: the f33 input must postdate the flag-aware NA pass in
+# 01_f33_clean.R (see docs/FLAGGED_ZERO_NA_HANDLING.md); NYC never reported
+# the COVID items, so a zero here means a stale pre-flag rds -- and a missing
+# row means a truncated or mis-keyed input, so assert cardinality too
+# (stopifnot passes on an empty logical vector)
+nyc_canary <- f33_sy12_sy23 |>
+  filter(ncesid == "3620580", year == "2021")
 stopifnot(
-  f33_sy12_sy23 |>
-    filter(ncesid == "3620580", year == "2021") |>
-    pull(exp_covid_total) |>
-    is.na()
+  nrow(nyc_canary) == 1,
+  is.na(nyc_canary$exp_covid_total[[1]])
 )
+
+# the joins below assume one row per district-year in the f33 spine
+stopifnot(anyDuplicated(f33_sy12_sy23[, c("ncesid", "year")]) == 0)
 
 # load saipe data
 saipe_fy12_fy23_clean <- read_rds("data/processed/saipe_fy12_fy23_clean.rds") |>
@@ -144,7 +149,19 @@ acs_fy12_fy23_all <- bind_rows(
   acs_fy12_fy23_secondary,
   acs_fy12_fy23_unified
 ) |>
-  select(-dist_name, -state)
+  # any_of: acs rds built during the 0.2 release cycle lack the state
+  # column (a select-range slip in 04-06, since fixed); both shapes join
+  # identically because dist_name and state are dropped here regardless
+  select(-any_of(c("dist_name", "state"))) |>
+  # census publishes each state's "remainder of state" pseudo-district
+  # (XX99999) at more than one geography level, which duplicates
+  # (ncesid, year) across the three level files; no F-33 district carries
+  # these ids. scripts 04-06 now drop them at source, but keep the filter
+  # here so rds built from older pulls cannot reintroduce them
+  filter(!str_detect(ncesid, "99999$"))
+
+# a duplicate key here would silently multiply f33 rows in the left join
+stopifnot(anyDuplicated(acs_fy12_fy23_all[, c("ncesid", "year")]) == 0)
 
 # join data ------
 edfinr_join_fy12_fy23 <- f33_sy12_sy23 |>
@@ -165,24 +182,6 @@ dir_match_rate <- edfinr_join_fy12_fy23 |>
 stopifnot(dir_match_rate > 0.97)
 
 
-# examine incomplete data -------
-
-# districts and charter schools with less than 0 enrollment
-exclude_no_enroll <- edfinr_join_fy12_fy23 |>
-  filter(enroll < 0)
-
-# districts and charters with less than 0 reported total revenue
-exclude_no_total_rev <- edfinr_join_fy12_fy23 |>
-  filter(rev_total < 0)
-
-# lea_type outliers
-exclude_lea_type <- edfinr_join_fy12_fy23 |>
-  filter(!lea_type_id %in% c(1, 2, 3, 7))
-
-# sch_type outliers
-exclude_sch_type <- edfinr_join_fy12_fy23 |>
-  filter(!schlev %in% c("01", "02", "03"))
-
 # clean data ----
 
 edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
@@ -191,6 +190,12 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
   filter(enroll > 0) |>
   # apply revenue adjustments
   mutate(
+    # the adjustment inputs are zero when unreported by design (see
+    # docs/FLAGGED_ZERO_NA_HANDLING.md), but the -1/-2 sentinel pass in
+    # 01_f33_clean.R can leave NA in them;
+    # un-coalesced NA here would propagate through the adjusted revenues
+    # and slip past the revenue-outlier screens as "Safe"
+    across(c(c11, u11, l12, v91, v92, q11), ~ coalesce(.x, 0)),
     rev_state_adj_temp = rev_state - c11, # subtract capital/debt service
     rev_local_adj_temp = rev_local - u11, # subtract property sales
     # add tx pre-2013 adjustment to subtract l12 from local revenue
@@ -379,28 +384,48 @@ edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_pre_exclusion |>
   filter(!ncesid %in% c("0905371", "0905372", "0905373")) |>
   select(-exclusion_cat)
 
+# the vetted rescue list must stay unique and its FY2012-FY2015 rows must
+# survive to the shipped panel: 57/59/60/60 restored by year plus the two
+# FY2012 district-years that were never miscoded (docs/MA_REGIONAL_RESCUE.md)
+stopifnot(anyDuplicated(ma_regional_rescue) == 0)
+stopifnot(
+  edfinr_data_fy12_fy23_clean |>
+    filter(
+      ncesid %in% ma_regional_rescue,
+      year %in% c("2012", "2013", "2014", "2015")
+    ) |>
+    nrow() == 238
+)
+
 exclusion_leas <- edfinr_data_fy12_fy23_pre_exclusion |>
   filter(exclusion_cat != "Safe")
 
-# flag district-years where the c11-driven state revenue adjustment removed
-# >50% of unadjusted state revenue and the adjustment is >25pp above the
-# district's own historical median -- these reflect one-time state capital
-# grants (e.g. MA MSBA, CO BEST) rather than changes in operating aid;
-# see adjustment_column_anomalies.md for methodology and affected states
-dist_med_state_adj <- edfinr_data_fy12_fy23_clean |>
-  mutate(state_adj_pct = (rev_state_unadj - rev_state) / rev_state_unadj) |>
+# flag district-years where the c11 (capital/debt service) share of
+# unadjusted state revenue exceeds 50% and sits >25pp above the district's
+# own historical median -- these reflect one-time state capital grants
+# (e.g. MA MSBA, CO BEST) rather than changes in operating aid; see
+# docs/C11_SPIKE_FLAG.md for methodology. the share is computed from
+# c11 itself (rev_state_cap_debt), not the combined state-revenue
+# adjustment, so the payments-to-other-systems adjustment cannot trip the
+# flag; it is NA where rev_state_unadj is zero (the share is undefined)
+c11_share <- function(cap_debt, state_unadj) {
+  if_else(state_unadj > 0, cap_debt / state_unadj, NA_real_)
+}
+
+dist_med_c11 <- edfinr_data_fy12_fy23_clean |>
+  mutate(c11_adj_pct = c11_share(rev_state_cap_debt, rev_state_unadj)) |>
   group_by(ncesid) |>
-  summarise(med_state_adj_pct = median(state_adj_pct, na.rm = TRUE),
+  summarise(med_c11_adj_pct = median(c11_adj_pct, na.rm = TRUE),
             .groups = "drop")
 
 edfinr_data_fy12_fy23_clean <- edfinr_data_fy12_fy23_clean |>
-  mutate(state_adj_pct = (rev_state_unadj - rev_state) / rev_state_unadj) |>
-  left_join(dist_med_state_adj, by = "ncesid") |>
+  mutate(c11_adj_pct = c11_share(rev_state_cap_debt, rev_state_unadj)) |>
+  left_join(dist_med_c11, by = "ncesid") |>
   mutate(
-    c11_spike_flag = state_adj_pct > 0.5 &
-      state_adj_pct > med_state_adj_pct + 0.25
+    c11_spike_flag = c11_adj_pct > 0.5 &
+      c11_adj_pct > med_c11_adj_pct + 0.25
   ) |>
-  select(-state_adj_pct, -med_state_adj_pct)
+  select(-c11_adj_pct, -med_c11_adj_pct)
 
 # create df sans expenditure detail
 edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
@@ -408,7 +433,7 @@ edfinr_data_fy12_fy23_skinny <- edfinr_data_fy12_fy23_clean |>
 
 # export data -----
 # parquet (gzip) for smaller, columnar hosted downloads; factor columns are
-# written as-is and reconstructed on the package read side (see EDFINR_UPDATE_PLAN.md)
+# written as-is and reconstructed on the read side in the edfinr package
 write_parquet(edfinr_data_fy12_fy23_clean, "data/processed/edfinr_data_fy12_fy23_full.parquet", compression = "gzip")
 write_parquet(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy23_skinny.parquet", compression = "gzip")
 
@@ -418,6 +443,9 @@ write_parquet(edfinr_data_fy12_fy23_skinny, "data/processed/edfinr_data_fy12_fy2
 # reads the combined file. year is sorted within each slice and factor levels
 # are identical across slices, so the package can bind_rows them with no drift.
 dir.create("data/processed/by_year", showWarnings = FALSE)
+# clear existing slices so a change in the year set cannot leave stale files
+unlink(list.files("data/processed/by_year", pattern = "\\.parquet$",
+                  full.names = TRUE))
 for (yy in sort(unique(edfinr_data_fy12_fy23_clean$year))) {
   write_parquet(
     filter(edfinr_data_fy12_fy23_clean, year == yy),

@@ -12,7 +12,7 @@ cpi_index_raw <- read_excel("data/raw/cpi/SeriesReport-20250417115228_1de8e6.xls
   skip = 11
 )
 
-# Creating school-year CPI multiplier for adjusting to 2021 dollars -----
+# Creating school-year CPI multiplier for adjusting to SY2011-12 dollars -----
 
 
 cpi_index_9024 <- cpi_index_raw |>
@@ -29,7 +29,7 @@ cpi_exclusions_sy12 <- cpi_index_9024 |>
   filter(year >= 2012) |>
   # create 2012 SY dollar index col
   mutate(sy12_index = avg_HALF1_HALF2lag[year == 2012]) |>
-  # create cpi adj where 20127 == 1
+  # create cpi adj where SY2012 == 1
   mutate(cpi_sy12 = avg_HALF1_HALF2lag / sy12_index) |>
   # create low and high exclusion values: $500 and $70,000 in 2012 USD
   mutate(
