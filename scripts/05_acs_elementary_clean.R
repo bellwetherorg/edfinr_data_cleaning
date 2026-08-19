@@ -117,7 +117,7 @@ acs_fy19_raw <- get_acs(
 # pull 2020 acs data
 # FY2020 onward the pulls are nationwide (no state filter), so they also
 # return Puerto Rico districts; those never match an F-33 row and drop out
-# in the script 08 left join
+# in the script 09 left join
 acs_fy20_raw <- get_acs(
   variables = acs_vars,
   geography = "school district (elementary)",

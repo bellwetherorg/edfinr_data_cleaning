@@ -1,7 +1,7 @@
 # Massachusetts Regional District Rescue (FY2012-FY2015)
 
 Vetting record for the `ma_regional_rescue` list in
-`scripts/08_edfinr_join_and_exclude.R`. Vetted July 2026 during the 0.2
+`scripts/09_edfinr_join_and_exclude.R`. Vetted July 2026 during the 0.2
 update, against CCD Directory vintages SY2011-12 through SY2016-17 obtained
 via the Urban Institute `educationdata` API and the F-33 files in
 `data/raw/ccd/`.
@@ -63,7 +63,7 @@ A district made the list only if all of the following held:
 ## The list
 
 60 NCES IDs, kept in `ma_regional_rescue` in
-`scripts/08_edfinr_join_and_exclude.R` (the code list, with one commented
+`scripts/09_edfinr_join_and_exclude.R` (the code list, with one commented
 district name per ID, is the canonical copy; this document mirrors it).
 All 60 are unique. The restored rows deliberately ship the source-reported
 `lea_type_id` of 4: the FY2016 rows recovered by the following-vintage
@@ -98,7 +98,7 @@ panel.
   data vintages (FY2024 and later) do not interact with it; nothing needs
   updating on a routine year-add.
 - If NCES revises the historical F-33 or directory files, the 238-row
-  assertion in script 08 will fail; re-vet against this document before
+  assertion in script 09 will fail; re-vet against this document before
   changing the expected count.
 - If a similar multi-vintage miscode appears elsewhere, prefer another
   frozen vetted list over a rule, and vet candidates on published-panel

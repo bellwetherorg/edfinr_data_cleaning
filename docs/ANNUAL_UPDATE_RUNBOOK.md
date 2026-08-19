@@ -16,6 +16,10 @@ two years, so expect the FY2024 files in the 2026 release cycle.
   pull from the BLS series `CUUR0000SA0`.
 - New NCES EDGE CWIFT release folder in `data/raw/cwift/` if one exists
   (record it in `data/raw/cwift/SOURCES.md`).
+- The new vintage's three Census Gazetteer school-district files
+  (`{YYYY}_Gaz_{unsd,elsd,scsd}_national.txt`) in `data/raw/gazetteer/`,
+  downloaded from the Census Gazetteer files page (record them in
+  `data/raw/gazetteer/SOURCES.md`).
 - Network access and a `CENSUS_API_KEY` for the tidycensus (ACS) pulls; the
   CCD directory pull uses the Urban `educationdata` API.
 
@@ -38,7 +42,11 @@ two years, so expect the FY2024 files in the 2026 release cycle.
    observed and remove or roll forward the carry-forward block at the end
    of the script (its own header documents this). If not, extend the
    carry-forward and keep `cwift_imputed` flagging it.
-6. **`08_edfinr_join_and_exclude.R`**: no year edits needed. The CPI
+6. **`08_sparsity_clean.R`**: extend `sparsity_years` to the new year
+   (the Gazetteer vintage matching the fiscal year; vintage Y boundaries
+   are a Jan 1 snapshot of SY (Y-1)-Y, so no year offset -- the script
+   header documents this).
+7. **`09_edfinr_join_and_exclude.R`**: no year edits needed. The CPI
    exclusion thresholds join by year, the per-year export loop adapts, and
    the MA rescue is frozen to FY2012-FY2015.
 
@@ -49,13 +57,16 @@ two years, so expect the FY2024 files in the 2026 release cycle.
   adding FY2025's directory will slightly change FY2024's LEA-type
   exclusions. Small row-count changes in the prior latest year are
   expected, not a defect.
-- **Built-in assertions in script 08** will stop the run on: a stale or
+- **Built-in assertions in scripts 08 and 09** will stop the run on: a stale or
   truncated F-33 input (NYC canary), duplicate `(ncesid, year)` keys in the
-  F-33 or ACS inputs, a directory match rate at or below 97% (the classic
-  symptom of a year-alignment mistake), or the MA rescue invariant (238
-  rows) drifting. If the MA assertion fails, NCES has revised historical
-  files; re-vet against `MA_REGIONAL_RESCUE.md` before touching the
-  expected count.
+  F-33, ACS, or Gazetteer inputs (a Gazetteer duplicate means a district
+  appeared in more than one of the three type files within a vintage), a
+  directory match rate at or below 97% (the classic symptom of a
+  year-alignment mistake), a sparsity match rate at or below 97% among
+  regular/component districts (a broken Gazetteer vintage or GEOID-format
+  regression), or the MA rescue invariant (238 rows) drifting. If the MA
+  assertion fails, NCES has revised historical files; re-vet against
+  `MA_REGIONAL_RESCUE.md` before touching the expected count.
 - **F-33 documentation drift.** Skim the new year's release notes for
   item-definition changes before trusting the copy-paste mapping; the CE
   and AE items have changed availability more than once.
