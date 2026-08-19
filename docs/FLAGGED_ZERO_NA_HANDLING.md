@@ -1,7 +1,7 @@
 # Flag-Aware NA Handling for F-33 Zero-Filled Items
 
 Design record for the `na_flagged()` pass in `scripts/01_f33_clean.R` and its
-guard rails in `scripts/08_edfinr_join_and_exclude.R`. Implemented July 2026
+guard rails in `scripts/09_edfinr_join_and_exclude.R`. Implemented July 2026
 for the 0.2 release.
 
 ## The problem
@@ -46,21 +46,21 @@ values where states did not report, which explains most of the
 
 Summary items (`TOTALREV`, `TCURELSC`, `TCAPOUT`) carry no flags and cannot
 be repaired this way. `v33` (enrollment) has a flag but is not in the item
-list; a zero-filled flagged enrollment is dropped anyway by script 08's
+list; a zero-filled flagged enrollment is dropped anyway by script 09's
 `enroll > 0` filter, so the outcome is identical.
 
 ## Guard rails
 
-- **Canary** (script 08, after the F-33 load): NYC (`3620580`) FY2021
+- **Canary** (script 09, after the F-33 load): NYC (`3620580`) FY2021
   `exp_covid_total` must exist as exactly one row and be `NA`. A zero there
   means a stale pre-flag rds; a missing row means a truncated input. The
   cardinality assertion matters because `stopifnot()` passes on an empty
   logical vector.
-- **Coalesce in script 08**: the `-1`/`-2` sentinel pass in script 01 spans
+- **Coalesce in script 09**: the `-1`/`-2` sentinel pass in script 01 spans
   `c11:fund_bal_other`, which includes the nine adjustment inputs, so a
   sentinel code there becomes `NA` despite the exclusion above. As of the
   FY2012-FY2023 data no surviving row is affected (the codes occur only on
-  rows the `rev_total > 0, enroll > 0` filters drop), but script 08
+  rows the `rev_total > 0, enroll > 0` filters drop), but script 09
   coalesces the six inputs it does arithmetic on (`c11`, `u11`, `l12`,
   `v91`, `v92`, `q11`) to 0 so a future vintage cannot leak `NA` through the
   adjusted revenues and past the revenue-outlier screens.

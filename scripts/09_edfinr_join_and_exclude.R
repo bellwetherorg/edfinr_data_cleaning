@@ -1,4 +1,4 @@
-# 08_edfinr_join_and_exclude.R
+# 09_edfinr_join_and_exclude.R
 
 # load --------
 library(tidyverse)
@@ -142,6 +142,11 @@ cpi_exclusions_sy12 <- read_rds("data/processed/cpi_exclusions_sy12.rds")
 cwift_lea_clean <- read_rds("data/processed/cwift_lea_clean.rds") |>
   mutate(year = as.character(year))
 
+# load sparsity land-area data (year is integer here; convert to character
+# to match the panel join key)
+sparsity_fy12_fy23_clean <- read_rds("data/processed/sparsity_fy12_fy23_clean.rds") |>
+  mutate(year = as.character(year))
+
 # unify acs data -----
 
 acs_fy12_fy23_all <- bind_rows(
@@ -169,6 +174,7 @@ edfinr_join_fy12_fy23 <- f33_sy12_sy23 |>
   left_join(acs_fy12_fy23_all, by = c("ncesid", "year")) |>
   left_join(saipe_fy12_fy23_clean, by = c("ncesid", "year")) |>
   left_join(cwift_lea_clean, by = c("ncesid", "year")) |>
+  left_join(sparsity_fy12_fy23_clean, by = c("ncesid", "year")) |>
   left_join(cpi_exclusions_sy12 |> select("year", "cpi_sy12"), by = "year") |>
   select(ncesid, year, state, county, dist_name, state_leaid, enroll, everything())
 
@@ -180,6 +186,16 @@ dir_match_rate <- edfinr_join_fy12_fy23 |>
   summarise(rate = mean(!is.na(lea_type_id))) |>
   pull(rate)
 stopifnot(dir_match_rate > 0.97)
+
+# gazetteer boundaries exist only for geographic districts, so charters and
+# other non-geographic LEAs are NA by design; measure the match on regular
+# and component districts with real activity. a broken vintage or a
+# GEOID-format regression would crater this rate
+sparsity_match_rate <- edfinr_join_fy12_fy23 |>
+  filter(rev_total > 0, enroll > 0, lea_type_id %in% c(1, 2)) |>
+  summarise(rate = mean(!is.na(land_area_sq_mi))) |>
+  pull(rate)
+stopifnot(sparsity_match_rate > 0.97)
 
 
 # clean data ----
@@ -266,7 +282,10 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     exp_cur_pp = exp_cur_total / enroll,
     # capital outlay per pupil (single-year values are lumpy -- see README)
     exp_cap_total_pp = exp_cap_total / enroll,
-    rev_exp_pp_diff = rev_total_pp - exp_cur_pp
+    rev_exp_pp_diff = rev_total_pp - exp_cur_pp,
+    # students per square mile of district land area; NA (not Inf/NaN) when
+    # the gazetteer reports zero land area or the district has no boundary
+    s_per_sq_mi = if_else(land_area_sq_mi > 0, enroll / land_area_sq_mi, NA)
   ) |>
   # rename columns
   rename(
@@ -297,6 +316,9 @@ edfinr_data_fy12_fy23_pre_exclusion <- edfinr_join_fy12_fy23 |>
     stpov_pop, stpov_pct, cong_dist,
     state_leaid, county, cbsa,
     urbanicity_raw, urbanicity_raw_cat, urbanicity,
+    # placed above lea_type_id so both land in the skinny file: geographic
+    # descriptors that pair with urbanicity for rural/sparsity analysis
+    land_area_sq_mi, s_per_sq_mi,
     schlev, lea_type, lea_type_id,
 
     exp_emp_salary, exp_emp_bene, exp_textbooks, 

@@ -15,6 +15,8 @@ Convert raw data into a clean .rds file for the `edfinr` package
     Consumers (CPI-U)](https://data.bls.gov/toppicks?survey=cu)
 -   NCES EDGE [Comparable Wage Index for Teachers
     (CWIFT)](https://nces.ed.gov/programs/edge/Economic/TeacherWage)
+-   Census Bureau [Gazetteer Files (school
+    districts)](https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html)
 
 ## Data Processing Methods
 
@@ -337,13 +339,33 @@ Coverage and imputation (`cwift_impute_method`):
     and carried-forward (FY2023) values with appropriate caution, and note the
     partial LEA coverage (`NA` where a district is outside the CWIFT universe).
 
+### District Land Area and Sparsity (Census Gazetteer)
+
+Data source: U.S. Census Bureau Gazetteer Files (school-district series),
+cleaned by `scripts/08_sparsity_clean.R` and documented in
+`data/raw/gazetteer/SOURCES.md`. Two columns are added to both the full and
+skinny datasets:
+
+- `land_area_sq_mi`: the district's land area in square miles (`ALAND_SQMI` as published by Census — land only, water excluded).
+- `s_per_sq_mi`: students per square mile, computed as `enroll` (F-33 enrollment) divided by `land_area_sq_mi`. Shipped untransformed.
+
+Gazetteer vintage `yyyy` maps to fiscal year `yyyy`: vintage boundaries are a January 1 snapshot of calendar year `yyyy`, the middle of the school year that fiscal year denotes, so districts are matched to the boundaries in effect during that school year and consolidations track correctly across the panel.
+
+**Cautions:**
+
+- **Non-geographic LEAs are `NA` by design.** Most charter LEAs, education service agencies, and state-operated agencies have no boundary in the Gazetteer, so both columns are `NA` — not zero — for them. `s_per_sq_mi` is also `NA` for the handful of districts with zero published land area (never a divide-by-zero artifact).
+- **The sparsity distribution spans several orders of magnitude.** The `s_per_sq_mi` calcualtion ranges from Alaskan districts below 1 student per square mile to NYC in the thousands. Consider a log-transformation before modeling or plotting in states with extreme variations.
+- **Land area is the denominator.** Districts with large water area show higher density than a total-area calculation would.
+- **Vermont FY2016–FY2021 is a known coverage gap.** During the [Act 46 reorganization](https://education.vermont.gov/schools/school-governance/act-46) process, the Census school-district universe for Vermont listed supervisory unions while F-33 reported the underlying union and joint districts, so most VT district-years in those years have no published boundary and are `NA` (match rate ~7–12%, vs. ~97%+ in FY2012–FY2015 and FY2022–FY2023).
+
 ## Joining Data
 
 -   The joining process is implemented in the
-    `08_edfinr_join_and_exclude.R` script.
+    `09_edfinr_join_and_exclude.R` script.
 -   Data from the F-33 survey, CCD Directory, ACS (unified, elementary,
-    and secondary), SAIPE, and CWIFT sources are merged using left joins on
-    shared district identifiers (ncesid) and fiscal year.
+    and secondary), SAIPE, CWIFT, and Census Gazetteer sources are merged
+    using left joins on shared district identifiers (ncesid) and fiscal
+    year.
 -   The procedure ensures that each district record is enriched with
     revenue, expenditure, demographic, and economic data.
 
@@ -397,7 +419,7 @@ Coverage and imputation (`cwift_impute_method`):
     spans five consecutive vintages (SY 2011-12 through SY 2015-16), the
     following-vintage check cannot recover FY2012-FY2015 for those
     districts; an explicit vetted list of 60 MA regional districts
-    (`ma_regional_rescue` in `scripts/08_edfinr_join_and_exclude.R`)
+    (`ma_regional_rescue` in `scripts/09_edfinr_join_and_exclude.R`)
     restores them. See `docs/MA_REGIONAL_RESCUE.md` for the vetting. Note that
     the newest year in the panel has no following vintage yet, so its
     LEA-type exclusions rest on the same-year vintage alone and may revise
@@ -455,6 +477,10 @@ Users should note the following when working with the `edfinr` datasets:
     the join. Earlier releases carried manual corrections for a handful of
     districts whose sources disagreed on state; those are no longer needed,
     and each NCES ID maps to a single state in the published data.
+-   `land_area_sq_mi` and `s_per_sq_mi` are `NA` for LEAs without a Census
+    boundary (most charters, ESAs, and state-operated agencies) and where
+    published land area is zero; an `NA` there means "no defined geography,"
+    never a divide-by-zero artifact.
 -   The joined dataset represents a synthesis of data from multiple
     sources; discrepancies in source data formats may lead to minor
     variations.

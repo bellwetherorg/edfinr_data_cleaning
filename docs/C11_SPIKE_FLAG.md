@@ -1,7 +1,7 @@
 # c11_spike_flag Methodology
 
 Design record for the `c11_spike_flag` indicator computed in
-`scripts/08_edfinr_join_and_exclude.R` and shipped in both the full and
+`scripts/09_edfinr_join_and_exclude.R` and shipped in both the full and
 skinny datasets. Finalized July 2026 for the 0.2 release.
 
 ## Purpose

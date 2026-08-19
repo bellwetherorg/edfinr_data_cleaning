@@ -1,7 +1,7 @@
 # CCD Directory Year Alignment
 
 Design record for the fiscal-year convention in `scripts/02_ccd_clean.R` and
-the directory-dependent screens in `scripts/08_edfinr_join_and_exclude.R`.
+the directory-dependent screens in `scripts/09_edfinr_join_and_exclude.R`.
 The alignment fix landed July 2026 (commit `19e27e9`) for the 0.2 release.
 
 ## The convention
@@ -24,12 +24,12 @@ Under the bug the pattern was reversed.
 
 ## Downstream dependencies on this alignment
 
-- **Directory match-rate guard** (script 08): after the join, more than 97%
+- **Directory match-rate guard** (script 09): after the join, more than 97%
   of live F-33 district-years (`rev_total > 0, enroll > 0`) must have a
   directory row. A year misalignment shows up here first, because unmatched
   rows get `lea_type_id = NA` and would otherwise be dropped silently as
   "LEA Type" exclusions.
-- **Following-vintage LEA-type screen** (script 08): a district-year is
+- **Following-vintage LEA-type screen** (script 09): a district-year is
   excluded on LEA type only if the *next* directory vintage agrees. This
   absorbs single-vintage miscodes (several AL city districts around their
   formation years; all MA regionals through SY2015-16, see
@@ -49,6 +49,6 @@ The Urban API encodes missing/not-applicable/suppressed values as
 `school_count`) and in the locale field before factor construction, so no
 sentinel survives as a negative count or as its own factor level.
 `lea_type_id` sentinels are left as-is deliberately: the exclusion logic in
-script 08 distinguishes "no directory row" (`NA`) from "directory row with a
+script 09 distinguishes "no directory row" (`NA`) from "directory row with a
 non-district type," and NA-ing type sentinels would collapse that
 distinction.
